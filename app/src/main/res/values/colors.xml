@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="field_color">#1565c0</color>
+    <color name="border_field_color">#1b5e20</color>
+    <color name="selected_field_color">#42a5f5</color>
+</resources>
