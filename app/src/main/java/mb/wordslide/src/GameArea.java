@@ -8,6 +8,9 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.GridLayout;
+import android.widget.TextView;
 
 
 import com.google.common.collect.ImmutableTable;
@@ -28,12 +31,13 @@ public class GameArea extends Fragment implements View.OnTouchListener {
     private ImmutableTable<Integer, Integer, Field> _primaryFields, _secondaryFields;
     private ArrayList<Field> secondaryFields;
     private SwipeDirection swipeAxis;
-    private ViewGroup gameGrid;
+    private GridLayout gameGrid;
     private int fieldWidth;
     private int[] gameGridPos;
     private Vibrator vibrator;
     private Kernel kernel;
     private float gap;
+    private int FIELDS_IN_ROW = 6;
 
     /**
      * Наполнение фрагмента с игровым полем
@@ -50,45 +54,92 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         fields = new ArrayList<>();
         secondaryFields = new ArrayList<>();
         primaryFields = new ArrayList<>();
-        gameGrid = (ViewGroup) rootView.findViewById(R.id.game_grid);
+        gameGrid = (GridLayout) rootView.findViewById(R.id.game_grid);
         fieldWidth = -1;
         ImmutableTable.Builder<Integer, Integer, Field> primaryFieldsBuilder = new ImmutableTable.Builder<>();
         ImmutableTable.Builder<Integer, Integer, Field> secondaryFieldsBuilder = new ImmutableTable.Builder<>();
-        /**
-         * Перебор всех дочерних элементов, для наполнения массивов
-         * c ячейками
-         */
-        for (int index = 0; index < gameGrid.getChildCount(); ++index) {
-            Field newField = (Field) gameGrid.getChildAt(index);
-            fields.add(newField);
-            newField.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                @Override
-                public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                    ((Field) v).saveOrigin();
-                    if (fieldWidth == -1)
-                        fieldWidth = v.getWidth();
-                    float tempGap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
-                    if (tempGap > 0) {
-                        gap = tempGap;
-                        for (Field field : fields) {
-                            field.setGap(gap);
+
+        LayoutInflater gameAreaInflater = getActivity().getLayoutInflater();
+        Field newField;
+        GridLayout.LayoutParams layoutParams;
+        for (int row = 0; row < FIELDS_IN_ROW; ++row)
+            for (int col = 0; col < FIELDS_IN_ROW; ++col) {
+                newField = (Field) gameAreaInflater.inflate(R.layout.field_template, null, false);
+                layoutParams = new GridLayout.LayoutParams();
+                layoutParams.rowSpec = GridLayout.spec(row);
+                layoutParams.columnSpec = GridLayout.spec(col);
+                layoutParams.setMargins(10, 10, 10, 10);
+                layoutParams.height = 150;
+                layoutParams.width = 150;
+                newField.setLayoutParams(layoutParams);
+                gameGrid.addView(newField);
+                newField.setPosition(row, col);
+
+
+                fields.add(newField);
+                newField.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                    @Override
+                    public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                        ((Field) v).saveOrigin();
+                        if (fieldWidth == -1)
+                            fieldWidth = v.getWidth();
+                        float tempGap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
+                        if (tempGap > 0) {
+                            gap = tempGap;
+                            for (Field field : fields) {
+                                field.setGap(gap);
+                            }
                         }
                     }
-                }
-            });
-            String borderTag = getActivity().getResources().getString(R.string.border_tag);
-            if (borderTag.equals(newField.getTag())) {
-                newField.setType(Field.BorderType.SECONDARY);
-                newField.hide();
-                secondaryFields.add(newField);
-                secondaryFieldsBuilder.put(newField.getRow(), newField.getCol(), newField);
-            } else {
-                newField.setType(Field.BorderType.PRIMARY);
+                });
+                newField.setType(Field.BorderType.PRIMARY, FIELDS_IN_ROW);
                 primaryFields.add(newField);
                 primaryFieldsBuilder.put(newField.getRow(), newField.getCol(), newField);
+                newField.setOnTouchListener(this);
             }
-            newField.setOnTouchListener(this);
-        }
+
+        for (int row = 0; row < FIELDS_IN_ROW; ++row)
+            for (int col = 0; col < FIELDS_IN_ROW; ++col) {
+                if(row > 0 && row < FIELDS_IN_ROW - 1 && col > 0 && col < FIELDS_IN_ROW - 1)
+                    continue;
+
+                newField = (Field) gameAreaInflater.inflate(R.layout.field_template, null, false);
+                layoutParams = new GridLayout.LayoutParams();
+                layoutParams.rowSpec = GridLayout.spec(row);
+                layoutParams.columnSpec = GridLayout.spec(col);
+                layoutParams.setMargins(10, 10, 10, 10);
+                layoutParams.height = 150;
+                layoutParams.width = 150;
+                newField.setLayoutParams(layoutParams);
+                gameGrid.addView(newField);
+                newField.setPosition(row, col);
+
+                fields.add(newField);
+
+                newField.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                    @Override
+                    public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                        ((Field) v).saveOrigin();
+                        if (fieldWidth == -1)
+                        fieldWidth = v.getWidth();
+                        float tempGap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
+                        if (tempGap > 0) {
+                            gap = tempGap;
+                            for (Field field : fields) {
+                                field.setGap(gap);
+                            }
+                        }
+                    }
+                });
+
+                newField.setType(Field.BorderType.SECONDARY, FIELDS_IN_ROW);
+                newField.hide();
+//                newField.setBackgroundResource(R.color.border_field_color);
+                secondaryFields.add(newField);
+                secondaryFieldsBuilder.put(newField.getRow(), newField.getCol(), newField);
+
+                newField.setOnTouchListener(this);
+            }
 
         _primaryFields = primaryFieldsBuilder.build();
         _secondaryFields = secondaryFieldsBuilder.build();
@@ -238,9 +289,8 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         } else {
             float progress = Math.abs((event.getRawY() - downY) / gap);
             for (Field field : activeFields)
-                field.animate(swipeDirection, progress, event.getRawY() - gameGridPos[0]);
+                field.animate(swipeDirection, progress, event.getRawY() - gameGridPos[1]);
         }
-
         checkOriginMatches();
     }
 
@@ -260,12 +310,12 @@ public class GameArea extends Fragment implements View.OnTouchListener {
                     match = true;
                 break;
             case UP:
-                neighboringField = activeFields.get(0);
+                neighboringField = activePrimaryFields.get(0);
                 if (checkField.getY() < neighboringField.getOriginY())
                     match = true;
                 break;
             case DOWN:
-                neighboringField = activeFields.get(2);
+                neighboringField = activePrimaryFields.get(2);
                 if (checkField.getY() > neighboringField.getOriginY())
                     match = true;
                 break;
@@ -283,7 +333,6 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         onDown();
     }
 
-    private final int FIELDS_IN_ROW = 4;
     private class Kernel {
 
         public Kernel() {
@@ -295,16 +344,29 @@ public class GameArea extends Fragment implements View.OnTouchListener {
 
         public void updateSecondaryFields() {
             for (Field field : secondaryFields) {
-                switch (field.getBorderPosition()) {
-                    case RT:
-                    case R:
-                    case RB:
-                        field.setLetter(_primaryFields.get(field.getRow(), 0).getLetter());
-                        break;
-                    case LT:
-                    case L:
+                if (swipeAxis == SwipeDirection.X)
+                    switch (field.getBorderPosition()) {
+                        case RT:
+                        case R:
+                        case RB:
+                            field.setLetter(_primaryFields.get(field.getRow(), 0).getLetter());
+                            break;
+                        case LT:
+                        case L:
+                        case LB:
+                            field.setLetter(_primaryFields.get(field.getRow(), FIELDS_IN_ROW - 1).getLetter());
+                            break;
+                    }
+                else switch (field.getBorderPosition()) {
+                    case B:
                     case LB:
-                        field.setLetter(_primaryFields.get(field.getRow(), FIELDS_IN_ROW - 1).getLetter());
+                    case RB:
+                        field.setLetter(_primaryFields.get(0, field.getCol()).getLetter());
+                        break;
+                    case T:
+                    case LT:
+                    case RT:
+                        field.setLetter(_primaryFields.get(FIELDS_IN_ROW - 1, field.getCol()).getLetter());
                         break;
                 }
             }
@@ -321,6 +383,20 @@ public class GameArea extends Fragment implements View.OnTouchListener {
                     activePrimaryFields.get(activePrimaryFields.size() - 1).setLetter(tempChar);
                     break;
                 case RIGHT:
+                    tempChar = activePrimaryFields.get(FIELDS_IN_ROW - 1).getLetter();
+                    for (int index = FIELDS_IN_ROW - 1; index > 0; index--) {
+                        activePrimaryFields.get(index).setLetter(activePrimaryFields.get(index - 1).getLetter());
+                    }
+                    activePrimaryFields.get(0).setLetter(tempChar);
+                    break;
+                case UP:
+                    tempChar = activePrimaryFields.get(0).getLetter();
+                    for (int index = 0; index < activePrimaryFields.size() - 1; index++) {
+                        activePrimaryFields.get(index).setLetter(activePrimaryFields.get(index + 1).getLetter());
+                    }
+                    activePrimaryFields.get(activePrimaryFields.size() - 1).setLetter(tempChar);
+                    break;
+                case DOWN:
                     tempChar = activePrimaryFields.get(FIELDS_IN_ROW - 1).getLetter();
                     for (int index = FIELDS_IN_ROW - 1; index > 0; index--) {
                         activePrimaryFields.get(index).setLetter(activePrimaryFields.get(index - 1).getLetter());

@@ -1,8 +1,10 @@
 package mb.wordslide.src;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Pair;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import mb.wordslide.R;
@@ -18,8 +20,12 @@ public class Field extends TextView {
 
     public Field(Context context, AttributeSet attrs) {
         super(context, attrs, R.style.FieldStyle);
-        row = Integer.parseInt(attrs.getAttributeValue("http://schemas.android.com/apk/res/android", "layout_row"));
-        col = Integer.parseInt(attrs.getAttributeValue("http://schemas.android.com/apk/res/android", "layout_column"));
+    }
+
+    public void setPosition(int row, int col) {
+        this.row = row;
+        this.col = col;
+        setText(row + "." + col);
     }
 
     public boolean isSecondary() {
@@ -37,32 +43,26 @@ public class Field extends TextView {
         return col;
     }
 
-    private final int FIELDS_IN_ROW = 4;                  //todo: зарефакторить
-
-    public void setType(BorderType type) {
+    public void setType(BorderType type, int FIELDS_IN_ROW) {
         if (row >= 1 && col >= 1 && row < FIELDS_IN_ROW - 1 && col < FIELDS_IN_ROW - 1) {
             borderPosition = BorderPosition.NONE;
         } else {
-            switch (row) {
-                case 0:
-                    if (col == 0)
-                        borderPosition = BorderPosition.LT;
-                    else if (col == FIELDS_IN_ROW - 1)
-                        borderPosition = BorderPosition.RT;
-                    else borderPosition = BorderPosition.T;
-                    break;
-                case FIELDS_IN_ROW - 1:
-                    if (col == 0)
-                        borderPosition = BorderPosition.LB;
-                    else if (col == FIELDS_IN_ROW - 1)
-                        borderPosition = BorderPosition.RB;
-                    else borderPosition = BorderPosition.B;
-                    break;
-                default:
-                    if (col == 0)
-                        borderPosition = BorderPosition.L;
-                    else borderPosition = BorderPosition.R;
-                    break;
+            if (row == 0) {
+                if (col == 0)
+                    borderPosition = BorderPosition.LT;
+                else if (col == FIELDS_IN_ROW - 1)
+                    borderPosition = BorderPosition.RT;
+                else borderPosition = BorderPosition.T;
+            } else if (row == FIELDS_IN_ROW - 1) {
+                if (col == 0)
+                    borderPosition = BorderPosition.LB;
+                else if (col == FIELDS_IN_ROW - 1)
+                    borderPosition = BorderPosition.RB;
+                else borderPosition = BorderPosition.B;
+            } else {
+                if (col == 0)
+                    borderPosition = BorderPosition.L;
+                else borderPosition = BorderPosition.R;
             }
         }
         borderType = type;
@@ -104,7 +104,7 @@ public class Field extends TextView {
             hide();
         else {
             animate().rotationY(0).setDuration(0).start();
-            setRotationX(0);
+            animate().rotationX(0).setDuration(0).start();
         }
     }
 
@@ -142,8 +142,8 @@ public class Field extends TextView {
             case LEFT:
                 switch (borderPosition) {
                     case R:
-                    case RT:
                     case RB:
+                    case RT:
                         if (borderType == BorderType.SECONDARY)
                             flip(true, progress, direction);
                         else if (borderType == BorderType.PRIMARY)
@@ -187,6 +187,54 @@ public class Field extends TextView {
                         break;
                 }
                 break;
+            case UP:
+                switch (borderPosition) {
+                    case B:
+                    case RB:
+                    case LB:
+                        if (borderType == BorderType.SECONDARY)
+                            flip(true, progress, direction);
+                        else if (borderType == BorderType.PRIMARY)
+                            animate().y(touchPos - getToFingerY()).setDuration(0).start();
+                        break;
+                    case T:
+                    case LT:
+                    case RT:
+                        if (borderType == BorderType.PRIMARY)
+                            flip(false, progress, direction);
+                        break;
+                    case R:
+                    case L:
+                    case NONE:
+                        if (borderType == BorderType.PRIMARY)
+                            animate().y(touchPos - getToFingerY()).setDuration(0).start();
+                        break;
+                }
+                break;
+            case DOWN:
+                switch (borderPosition) {
+                    case B:
+                    case RB:
+                    case LB:
+                        if (borderType == BorderType.PRIMARY)
+                            flip(false, progress, direction);
+                        break;
+                    case T:
+                    case LT:
+                    case RT:
+                        if (borderType == BorderType.SECONDARY)
+                            flip(true, progress, direction);
+                        else if (borderType == BorderType.PRIMARY)
+                            animate().y(touchPos - getToFingerY()).setDuration(0).start();
+                        break;
+                    case R:
+                    case L:
+                    case NONE:
+                        if (borderType == BorderType.PRIMARY)
+                            animate().y(touchPos - getToFingerY()).setDuration(0).start();
+                        break;
+                }
+                break;
         }
     }
 
@@ -194,23 +242,44 @@ public class Field extends TextView {
 
         switch (direction) {
             case LEFT:
-                if (appear && getRotationY() > 0) {
+                if (appear) {
                     animate().rotationY(90f - 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
                     animate().x(origin.first + (getWidth() / 2) * (1 - progress)).setDuration(0).start();
                 }
-                if (!appear && getRotationY() > -90) {
+                if (!appear) {
                     animate().rotationY(-90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
                     animate().x((origin.first - getWidth() / 2) + getWidth() * (1 - progress) / 2).setDuration(0).start();
                 }
                 break;
             case RIGHT:
-                if (appear && getRotationY() < 0) {
+                if (appear) {
                     animate().rotationY(-90f + 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
                     animate().x((origin.first - getWidth() / 2) + getWidth() * (progress) / 2).setDuration(0).start();
                 }
-                if (!appear && getRotationY() < 90) {
+                if (!appear) {
                     animate().rotationY(90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
                     animate().x(origin.first + getWidth() * (progress) / 2).setDuration(0).start();
+                }
+                break;
+            case UP:
+                if (appear) {
+                    animate().rotationX(-90 + 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
+                    animate().y(origin.second + (getWidth() / 2) * (1 - progress)).setDuration(0).start();
+                }
+                if (!appear) {
+                    animate().rotationX(90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
+                    animate().y(origin.second - getWidth() * (progress) / 2).setDuration(0).start();
+                }
+                break;
+            case DOWN:
+                if (appear) {
+                    L.l("" + getRotationX());
+                    animate().rotationX(90 - 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
+                    animate().y(origin.second - (getWidth() / 2) * (1 - progress)).setDuration(0).start();
+                }
+                if (!appear) {
+                    animate().rotationX(-90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
+                    animate().y(origin.second + getWidth() * (progress) / 2).setDuration(0).start();
                 }
                 break;
         }
@@ -225,7 +294,8 @@ public class Field extends TextView {
                     case RB:
                         show();
                         setX(getX() + getWidth() / 2);
-                        setRotationY(90);
+                        setRotationY(0);
+                        setRotationY(90f);
                         break;
                 }
                 break;
@@ -236,7 +306,32 @@ public class Field extends TextView {
                     case LB:
                         show();
                         setX(getX() - getWidth() / 2);
-                        setRotationY(-90);
+                        setRotationY(0);
+                        setRotationY(-90f);
+                        break;
+                }
+                break;
+            case UP:
+                switch (borderPosition) {
+                    case B:
+                    case RB:
+                    case LB:
+                        show();
+                        setY(getY() + getWidth() / 2);
+                        setRotationY(0);
+                        setRotationX(90f);
+                        break;
+                }
+                break;
+            case DOWN:
+                switch (borderPosition) {
+                    case T:
+                    case RT:
+                    case LT:
+                        show();
+                        setY(getY() - getWidth() / 2);
+                        setRotationY(0);
+                        setRotationX(-90f);
                         break;
                 }
                 break;
