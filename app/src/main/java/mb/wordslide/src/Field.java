@@ -15,17 +15,16 @@ public class Field extends TextView {
     private int row, col;
     private BorderType borderType;
     private BorderPosition borderPosition;
-    private float gap;
 
 
     public Field(Context context, AttributeSet attrs) {
         super(context, attrs, R.style.FieldStyle);
+        origin = null;
     }
 
     public void setPosition(int row, int col) {
         this.row = row;
         this.col = col;
-        setText(row + "." + col);
     }
 
     public boolean isSecondary() {
@@ -92,10 +91,16 @@ public class Field extends TextView {
         return toFinger.second;
     }
 
-
     public void saveOrigin() {
         origin = new Pair<>(Math.round(getX()), Math.round(getY()));
     }
+
+    public boolean isOriginSet(){
+        if(origin == null)
+            return false;
+        else return true;
+    }
+
 
     public void resetPositionToOrigin() {
         animate().x(origin.first).setDuration(0).start();
@@ -238,54 +243,59 @@ public class Field extends TextView {
         }
     }
 
-    private void flip(boolean appear, float progress, SwipeDirection direction) {
+    private void flip(boolean appearing, float progress, SwipeDirection direction) {
+        float rotationAdjust = appearing ? (float) Math.pow(progress, 3) : (1f - (float) Math.pow((1 - progress), 3));
+        float startRotation = appearing ? 90f : 0f;
+        float rotationMultiplier = 0;
+
+        float offset;
+        float offsetMultiplier = 0;
+        float origin = 0;
 
         switch (direction) {
             case LEFT:
-                if (appear) {
-                    animate().rotationY(90f - 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
-                    animate().x(origin.first + (getWidth() / 2) * (1 - progress)).setDuration(0).start();
-                }
-                if (!appear) {
-                    animate().rotationY(-90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
-                    animate().x((origin.first - getWidth() / 2) + getWidth() * (1 - progress) / 2).setDuration(0).start();
-                }
+                origin = this.origin.first;
+                rotationMultiplier = -1f;
+                offsetMultiplier = appearing ? (1 - progress) : (-progress);
                 break;
             case RIGHT:
-                if (appear) {
-                    animate().rotationY(-90f + 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
-                    animate().x((origin.first - getWidth() / 2) + getWidth() * (progress) / 2).setDuration(0).start();
-                }
-                if (!appear) {
-                    animate().rotationY(90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
-                    animate().x(origin.first + getWidth() * (progress) / 2).setDuration(0).start();
-                }
+                startRotation *= -1f;
+                origin = this.origin.first;
+                rotationMultiplier = 1f;
+                offsetMultiplier = appearing ? (progress - 1) : (progress);
                 break;
             case UP:
-                if (appear) {
-                    animate().rotationX(-90 + 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
-                    animate().y(origin.second + (getWidth() / 2) * (1 - progress)).setDuration(0).start();
-                }
-                if (!appear) {
-                    animate().rotationX(90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
-                    animate().y(origin.second - getWidth() * (progress) / 2).setDuration(0).start();
-                }
+                startRotation *= -1f;
+                origin = this.origin.second;
+                rotationMultiplier = 1f;
+                offsetMultiplier = appearing ? (1 - progress) : (-progress);
                 break;
             case DOWN:
-                if (appear) {
-                    L.l("" + getRotationX());
-                    animate().rotationX(90 - 90f * (float) Math.pow(progress, 3)).setDuration(0).start();
-                    animate().y(origin.second - (getWidth() / 2) * (1 - progress)).setDuration(0).start();
-                }
-                if (!appear) {
-                    animate().rotationX(-90f * (1f - (float) Math.pow((1 - progress), 3))).setDuration(0).start();
-                    animate().y(origin.second + getWidth() * (progress) / 2).setDuration(0).start();
-                }
+                origin = this.origin.second;
+                rotationMultiplier = -1f;
+                offsetMultiplier = appearing ? (progress - 1) : (progress);
                 break;
         }
+
+        offset = origin + (getWidth() / 2) * offsetMultiplier;
+
+        switch (direction) {
+            case RIGHT:
+            case LEFT:
+                animate().rotationY(startRotation + rotationMultiplier * 90f * rotationAdjust).setDuration(0).start();
+                animate().x(offset).setDuration(0).start();
+                break;
+            case UP:
+            case DOWN:
+                animate().rotationX(startRotation + rotationMultiplier * 90f * rotationAdjust).setDuration(0).start();
+                animate().y(offset).setDuration(0).start();
+                break;
+        }
+
     }
 
     public void prepareToFlip(SwipeDirection direction) {
+        float rotationX = 0, rotationY = 0;
         switch (direction) {
             case LEFT:
                 switch (borderPosition) {
@@ -294,8 +304,8 @@ public class Field extends TextView {
                     case RB:
                         show();
                         setX(getX() + getWidth() / 2);
-                        setRotationY(0);
-                        setRotationY(90f);
+                        rotationY = 90f;
+                        rotationX = 0;
                         break;
                 }
                 break;
@@ -306,8 +316,8 @@ public class Field extends TextView {
                     case LB:
                         show();
                         setX(getX() - getWidth() / 2);
-                        setRotationY(0);
-                        setRotationY(-90f);
+                        rotationY = -90f;
+                        rotationX = 0;
                         break;
                 }
                 break;
@@ -318,8 +328,8 @@ public class Field extends TextView {
                     case LB:
                         show();
                         setY(getY() + getWidth() / 2);
-                        setRotationY(0);
-                        setRotationX(90f);
+                        rotationY = 0;
+                        rotationX = 90f;
                         break;
                 }
                 break;
@@ -330,21 +340,20 @@ public class Field extends TextView {
                     case LT:
                         show();
                         setY(getY() - getWidth() / 2);
-                        setRotationY(0);
-                        setRotationX(-90f);
+                        rotationY = 0;
+                        rotationX = -90;
                         break;
                 }
                 break;
 
         }
+
+        setRotationX(rotationX);
+        setRotationY(rotationY);
     }
 
     public BorderPosition getBorderPosition() {
         return borderPosition;
-    }
-
-    public void setGap(float gap) {
-        this.gap = gap;
     }
 
     public enum BorderPosition {

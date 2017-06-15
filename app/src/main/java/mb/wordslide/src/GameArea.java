@@ -22,14 +22,8 @@ import mb.wordslide.R;
 
 // TODO: Добавить анимацию возврата при отпускании пальца от экрана
 public class GameArea extends Fragment implements View.OnTouchListener {
-    private ArrayList<Field> fields;
     private float downX, downY;
     private boolean inSwipe, swipeEnds;
-    private ArrayList<Field> activeFields;
-    private ArrayList<Field> activePrimaryFields;
-    private ArrayList<Field> primaryFields;
-    private ImmutableTable<Integer, Integer, Field> _primaryFields, _secondaryFields;
-    private ArrayList<Field> secondaryFields;
     private SwipeDirection swipeAxis;
     private GridLayout gameGrid;
     private int fieldWidth;
@@ -75,21 +69,13 @@ public class GameArea extends Fragment implements View.OnTouchListener {
                 gameGrid.addView(newField);
                 newField.setPosition(row, col);
 
-
                 fields.add(newField);
                 newField.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                     @Override
                     public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                         ((Field) v).saveOrigin();
-                        if (fieldWidth == -1)
-                            fieldWidth = v.getWidth();
-                        float tempGap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
-                        if (tempGap > 0) {
-                            gap = tempGap;
-                            for (Field field : fields) {
-                                field.setGap(gap);
-                            }
-                        }
+                        fieldWidth = v.getWidth();
+                        gap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
                     }
                 });
                 newField.setType(Field.BorderType.PRIMARY, FIELDS_IN_ROW);
@@ -100,7 +86,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
 
         for (int row = 0; row < FIELDS_IN_ROW; ++row)
             for (int col = 0; col < FIELDS_IN_ROW; ++col) {
-                if(row > 0 && row < FIELDS_IN_ROW - 1 && col > 0 && col < FIELDS_IN_ROW - 1)
+                if (row > 0 && row < FIELDS_IN_ROW - 1 && col > 0 && col < FIELDS_IN_ROW - 1)
                     continue;
 
                 newField = (Field) gameAreaInflater.inflate(R.layout.field_template, null, false);
@@ -120,30 +106,18 @@ public class GameArea extends Fragment implements View.OnTouchListener {
                     @Override
                     public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                         ((Field) v).saveOrigin();
-                        if (fieldWidth == -1)
-                        fieldWidth = v.getWidth();
-                        float tempGap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
-                        if (tempGap > 0) {
-                            gap = tempGap;
-                            for (Field field : fields) {
-                                field.setGap(gap);
-                            }
-                        }
                     }
                 });
 
                 newField.setType(Field.BorderType.SECONDARY, FIELDS_IN_ROW);
                 newField.hide();
-//                newField.setBackgroundResource(R.color.border_field_color);
                 secondaryFields.add(newField);
                 secondaryFieldsBuilder.put(newField.getRow(), newField.getCol(), newField);
-
                 newField.setOnTouchListener(this);
             }
 
         _primaryFields = primaryFieldsBuilder.build();
         _secondaryFields = secondaryFieldsBuilder.build();
-
 
         gameGrid.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
@@ -162,6 +136,19 @@ public class GameArea extends Fragment implements View.OnTouchListener {
 
         return rootView;
     }
+
+    //    private class FieldsBox {
+    private ArrayList<Field> fields;
+    private ArrayList<Field> activeFields;
+    private ArrayList<Field> activePrimaryFields;
+    private ArrayList<Field> primaryFields;
+    private ArrayList<Field> secondaryFields;
+    private ImmutableTable<Integer, Integer, Field> _primaryFields, _secondaryFields;
+
+//        public FieldsBox(){
+//
+//        }
+//    }
 
     float currentX;
     float currentY;
@@ -209,6 +196,8 @@ public class GameArea extends Fragment implements View.OnTouchListener {
                     swipeAxis = SwipeDirection.X;
                     for (Field field : fields)
                         if (downY > field.getPosY() && downY < (field.getPosY() + fieldWidth)) {
+
+
                             if (field.isSecondary())
                                 if (field.getBorderPosition() == Field.BorderPosition.T
                                         || field.getBorderPosition() == Field.BorderPosition.B)
