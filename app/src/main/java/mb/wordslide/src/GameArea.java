@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import mb.wordslide.R;
+import mb.wordslide.src.Activities.GameActivity;
 
 public class GameArea extends Fragment implements View.OnTouchListener {
     private float downX, downY;
@@ -30,6 +31,9 @@ public class GameArea extends Fragment implements View.OnTouchListener {
     private float gap;
     private int FIELDS_IN_ROW = 6;
     private FieldsHandler fieldsHandler;
+    private CellSelectionListener cellSelectionListener;
+    private Word word;
+    private GameStateMachine gameStateMachine;
 
     /**
      * Наполнение фрагмента с игровым полем
@@ -51,6 +55,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         fieldWidth = -1;
         ImmutableTable.Builder<Integer, Integer, Field> primaryFieldsBuilder = new ImmutableTable.Builder<>();
         ImmutableTable.Builder<Integer, Integer, Field> secondaryFieldsBuilder = new ImmutableTable.Builder<>();
+        gameStateMachine = new GameStateMachine();
 
         LayoutInflater gameAreaInflater = getActivity().getLayoutInflater();
         Field newField;
@@ -151,6 +156,11 @@ public class GameArea extends Fragment implements View.OnTouchListener {
     private ArrayList<Field> secondaryFields;
     private ImmutableTable<Integer, Integer, Field> _primaryFields, _secondaryFields;
 
+    public void addOnCellSelectedListener(CellSelectionListener cellSelectionListener, Word word) {
+        this.cellSelectionListener = cellSelectionListener;
+        this.word = word;
+    }
+
     private class FieldsHandler {
         private ArrayList<Field> activeFields;
         private Field activeSecondaryField;
@@ -220,17 +230,19 @@ public class GameArea extends Fragment implements View.OnTouchListener {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                gameStateMachine.touch();
                 onDown();
                 break;
             case MotionEvent.ACTION_MOVE:
                 onMove(event);
                 break;
             case MotionEvent.ACTION_UP:
+                gameStateMachine.touchEnds();
                 fieldsIsSet = false;
                 fieldsHandler.clean();
                 swipeDirection = SwipeDirection.NONE;
                 swipeAxis = SwipeDirection.NONE;
-                onUp((Field) v);
+                onUp((v.getClass() == Field.class)?(Field)v:null);
                 break;
         }
         return true;
@@ -250,6 +262,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
             continueSwipe(event);
         } else {
             if (Math.sqrt(Math.abs(currentX - downX) + Math.abs(currentY - downY)) > SWIPE_DETECT_RADIUS) {
+                gameStateMachine.swipeGetOutOfRange();
                 if (!fieldsIsSet) {
                     if (Math.abs(currentX - downX) >= Math.abs(currentY - downY)) {
                         swipeAxis = SwipeDirection.X;
@@ -326,10 +339,17 @@ public class GameArea extends Fragment implements View.OnTouchListener {
 
     private void onUp(Field field) {
         if(field != null && !inSwipe){
-            field.setBackgroundResource(R.color.border_field_color);
+            selectCell(field);
         }
         swipeEnds = false;
         reset();
+    }
+
+    private void selectCell(Field field) {
+        if(word.add(field)) {
+            field.setBackgroundResource(R.drawable.selected_field);
+            cellSelectionListener.nextLetter();
+        }
     }
 
     private void reset() {
@@ -339,6 +359,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
             }
         inSwipe = false;
     }
+
 
 
     private float previousTouchX, previousTouchY;
@@ -390,6 +411,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
     }
 
     private void originsMatch() {
+        gameStateMachine.shifted();
         vibrator.vibrate();
         shift();
         swipeEnds = true;
@@ -405,7 +427,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
      * в зависимости от соседней от нее ячейки и
      * направления сдвига
      */
-    public void shift() {
+    private void shift() {
         char tempChar;
         ArrayList<Field> primaryFields = fieldsHandler.getActivePrimaryFields();
         switch (swipeDirection) {

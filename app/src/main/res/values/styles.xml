@@ -11,21 +11,8 @@
     <style name="FieldStyle">
         <item name="android:layout_width">70dp</item>
         <item name="android:layout_height">70dp</item>
-        <!--<item name="android:background">@color/field_color</item>-->
         <item name="android:background">@drawable/field</item>
-        <item name="android:textSize">30dp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:gravity">center</item>
-        <item name="android:layout_margin">10dp</item>
-    </style>
-
-    <style name="BorderFieldStyle">
-        <item name="android:layout_width">70dp</item>
-        <item name="android:layout_height">70dp</item>
-        <!--<item name="android:background">@color/field_color</item>-->
-        <item name="android:background">@drawable/field</item>
-        <!--<item name="android:background">@color/border_field_color</item>-->
-        <item name="android:textSize">30dp</item>
+        <item name="android:textSize">@dimen/letter_size</item>
         <item name="android:textStyle">bold</item>
         <item name="android:gravity">center</item>
         <item name="android:layout_margin">10dp</item>
@@ -36,4 +23,5 @@
         <item name="android:background">@android:color/white</item>
     </style>
 
+    <dimen name="letter_size">30sp</dimen>
 </resources>

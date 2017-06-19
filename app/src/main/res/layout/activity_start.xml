@@ -3,20 +3,50 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="mb.wordslide.src.Activities.StartActivity"
-    android:orientation="vertical">
+    android:background="@android:color/black"
+    android:orientation="vertical"
+    tools:context="mb.wordslide.src.Activities.StartActivity">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@android:color/transparent"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="5" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent">
+
+            <Button
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:background="@drawable/menu_img"
+                android:backgroundTint="@color/elements_color"/>
+        </FrameLayout>
+    </LinearLayout>
 
     <Space
         android:layout_width="20px"
         android:layout_height="200dp" />
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Play"
         android:id="@+id/play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:background="@drawable/capsule"
-        android:layout_gravity="center"/>
+        android:text="Play" />
+
     <Space
         android:layout_width="20px"
         android:layout_height="20dp" />
@@ -24,9 +54,10 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Records"
+        android:layout_gravity="center"
         android:background="@drawable/capsule"
-        android:layout_gravity="center"/>
+        android:text="Records" />
+
     <Space
         android:layout_width="20px"
         android:layout_height="20dp" />
@@ -34,8 +65,8 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Settings"
+        android:layout_gravity="center"
         android:background="@drawable/capsule"
-        android:layout_gravity="center"/>
+        android:text="Settings" />
 
 </LinearLayout>
