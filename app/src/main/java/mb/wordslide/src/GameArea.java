@@ -18,10 +18,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import mb.wordslide.R;
-import mb.wordslide.src.Activities.GameActivity;
 
-public class GameArea extends Fragment implements View.OnTouchListener {
-    private float downX, downY;
+public class GameArea extends Fragment implements View.OnTouchListener, GameStateMachine.StateListener {
+    private float downX, downY, startX, startY;
     private boolean inSwipe, swipeEnds;
     private SwipeDirection swipeAxis;
     private GridLayout gameGrid;
@@ -35,14 +34,6 @@ public class GameArea extends Fragment implements View.OnTouchListener {
     private Word word;
     private GameStateMachine gameStateMachine;
 
-    /**
-     * Наполнение фрагмента с игровым полем
-     *
-     * @param inflater
-     * @param container
-     * @param savedInstanceState
-     * @return
-     */
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -55,7 +46,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         fieldWidth = -1;
         ImmutableTable.Builder<Integer, Integer, Field> primaryFieldsBuilder = new ImmutableTable.Builder<>();
         ImmutableTable.Builder<Integer, Integer, Field> secondaryFieldsBuilder = new ImmutableTable.Builder<>();
-        gameStateMachine = new GameStateMachine();
+        gameStateMachine = new GameStateMachine(this);
 
         LayoutInflater gameAreaInflater = getActivity().getLayoutInflater();
         Field newField;
@@ -131,7 +122,7 @@ public class GameArea extends Fragment implements View.OnTouchListener {
             }
         });
 
-        gameGrid.setOnTouchListener(this);
+//        gameGrid.setOnTouchListener(this);
 
         inSwipe = false;
         swipeEnds = false;
@@ -139,12 +130,11 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         swipeAxis = SwipeDirection.NONE;
         vibrator = new Vibrator(getActivity());
         fieldsHandler.clean();
-        fieldsIsSet = false;
 
 
         Random random = new Random();
         int counter = 0;
-        for (Field field : fields)  //
+        for (Field field : fields)
             field.setLetter((char) (65 + counter++));
 //                field.setLetter((char) (65 + random.nextInt(25)));
 
@@ -161,17 +151,113 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         this.word = word;
     }
 
+    @Override
+    public void notice() {
+        GameStateMachine.State newState = gameStateMachine.getState();
+        switch (newState) {
+            case A:
+                onUp();
+                break;
+            case B:
+                onDown();
+                break;
+            case C:
+                startShift();
+                break;
+        }
+    }
+
+//    private void checkForDirectionChange() {
+//        switch (swipeDirection) {
+//            case LEFT:
+////                L.l(currentX  + " > " + startX  + " + "+ SWIPE_DETECT_RADIUS);
+//                if (currentX > startX + SWIPE_DETECT_RADIUS)
+//                    L.l("Direction changed: L -> R");
+//                break;
+//            case RIGHT:
+//                if (currentX < startX - SWIPE_DETECT_RADIUS)
+//                    L.l("Direction changed: R -> L");
+//                break;
+//            case UP:
+//                if (currentY > startY + SWIPE_DETECT_RADIUS)
+//                    L.l("Direction changed: U -> D");
+//                break;
+//            case DOWN:
+//                if (currentY < startY - SWIPE_DETECT_RADIUS)
+//                    L.l("Direction changed: D -> U");
+//                break;
+//        }
+//    }
+
+    private boolean directionCanBeDefined() {
+        if (Math.sqrt(Math.abs(currentX - downX) + Math.abs(currentY - downY)) > SWIPE_DETECT_RADIUS)
+            return true;
+        else
+            return false;
+    }
+
+    private void startShift() {
+
+        L.l(downX + ", " + downY);
+        if (Math.abs(currentX - downX) >= Math.abs(currentY - downY)) {
+            swipeAxis = SwipeDirection.X;
+
+            if (swipeDirection == SwipeDirection.NONE)
+                if (Math.round(currentX) < previousTouchX)
+                    swipeDirection = SwipeDirection.LEFT;
+                else swipeDirection = SwipeDirection.RIGHT;
+
+            for (Field field : fieldsHandler.getPrimaryFields())
+                if (downY > field.getPosY() && downY < (field.getPosY() + fieldWidth)) {
+                    fieldsHandler.addActiveFields(field.getRow(), field.getCol());
+                    break;
+                }
+        } else {
+            swipeAxis = SwipeDirection.Y;
+
+            if (swipeDirection == SwipeDirection.NONE)
+                if (Math.round(currentY) < previousTouchY)
+                    swipeDirection = SwipeDirection.UP;
+                else swipeDirection = SwipeDirection.DOWN;
+
+            for (Field field : fieldsHandler.getPrimaryFields())
+                if (downX > field.getPosX() && downX < (field.getPosX() + fieldWidth)) {
+                    fieldsHandler.addActiveFields(field.getRow(), field.getCol());
+                    break;
+                }
+        }
+
+        L.l(swipeDirection.toString());
+
+        for (Field field : fieldsHandler.getActiveFields())
+            field.setToFinger(currentX - field.getPosX(), currentY - field.getPosY());
+
+        inSwipe = true;
+        downX = currentX;
+        downY = currentY;
+        prepareFields();
+    }
+
     private class FieldsHandler {
         private ArrayList<Field> activeFields;
-        private Field activeSecondaryField;
+        private Field activeSecondaryFields;
         private ArrayList<Field> activePrimaryFields;
+        private boolean set;
 
         public ArrayList<Field> getPrimaryFields() {
             return primaryFields;
         }
 
+        public FieldsHandler() {
+            clean();
+        }
+
         public void clean() {
             activePrimaryFields = null;
+            activeSecondaryFields = null;
+            activeFields = null;
+
+            set = false;
         }
 
         public void addActiveFields(int row, int col) {
@@ -185,34 +271,35 @@ public class GameArea extends Fragment implements View.OnTouchListener {
             switch (swipeDirection) {
                 case LEFT:
                     tempField = activeFields.get(activeFields.size() - 1);
-                    activeSecondaryField = _secondaryFields.get(tempField.getRow(), tempField.getCol());
+                    activeSecondaryFields = _secondaryFields.get(tempField.getRow(), tempField.getCol());
                     break;
                 case RIGHT:
                     tempField = activeFields.get(0);
-                    activeSecondaryField = _secondaryFields.get(tempField.getRow(), tempField.getCol());
+                    activeSecondaryFields = _secondaryFields.get(tempField.getRow(), tempField.getCol());
                     break;
                 case UP:
                     tempField = activeFields.get(activeFields.size() - 1);
-                    activeSecondaryField = _secondaryFields.get(tempField.getRow(), tempField.getCol());
+                    activeSecondaryFields = _secondaryFields.get(tempField.getRow(), tempField.getCol());
                     break;
                 case DOWN:
                     tempField = activeFields.get(0);
-                    activeSecondaryField = _secondaryFields.get(tempField.getRow(), tempField.getCol());
+                    activeSecondaryFields = _secondaryFields.get(tempField.getRow(), tempField.getCol());
                     break;
             }
-            activeFields.add(activeSecondaryField);
+            activeFields.add(activeSecondaryFields);
+            set = true;
         }
 
         public ArrayList<Field> getActiveFields() {
             return activeFields;
         }
 
-        public boolean isActiveFieldsSet() {
-            return activeFields != null;
+        public boolean isSet() {
+            return set;
         }
 
-        public Field getActiveSecondaryField() {
-            return activeSecondaryField;
+        public Field getActiveSecondaryFields() {
+            return activeSecondaryFields;
         }
 
         public ArrayList<Field> getActivePrimaryFields() {
@@ -220,105 +307,73 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         }
     }
 
-    float currentX;
-    float currentY;
+    float currentX, currentY;
+
+    float offsetX, offsetY;
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         currentX = event.getRawX();
         currentY = event.getRawY();
 
+
+
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 gameStateMachine.touch();
-                onDown();
                 break;
             case MotionEvent.ACTION_MOVE:
-                onMove(event);
+                onMove();
                 break;
             case MotionEvent.ACTION_UP:
                 gameStateMachine.touchEnds();
-                fieldsIsSet = false;
-                fieldsHandler.clean();
-                swipeDirection = SwipeDirection.NONE;
-                swipeAxis = SwipeDirection.NONE;
-                onUp((v.getClass() == Field.class)?(Field)v:null);
                 break;
-        }
-        return true;
-    }
-
-    private void onDown() {
-        downX = currentX;
-        downY = currentY;
-        reset();
-    }
-
-    private final float SWIPE_DETECT_RADIUS = 5;
-    private boolean fieldsIsSet;
-
-    private void onMove(MotionEvent event) {
-        if (inSwipe) {
-            continueSwipe(event);
-        } else {
-            if (Math.sqrt(Math.abs(currentX - downX) + Math.abs(currentY - downY)) > SWIPE_DETECT_RADIUS) {
-                gameStateMachine.swipeGetOutOfRange();
-                if (!fieldsIsSet) {
-                    if (Math.abs(currentX - downX) >= Math.abs(currentY - downY)) {
-                        swipeAxis = SwipeDirection.X;
-
-                        if (swipeDirection == SwipeDirection.NONE)
-                            if (Math.round(event.getRawX()) < previousTouchX)
-                                swipeDirection = SwipeDirection.LEFT;
-                            else swipeDirection = SwipeDirection.RIGHT;
-
-                        for (Field field : fieldsHandler.getPrimaryFields())
-                            if (downY > field.getPosY() && downY < (field.getPosY() + fieldWidth)) {
-                                fieldsHandler.addActiveFields(field.getRow(), field.getCol());
-                                break;
-                            }
-                    } else {
-                        swipeAxis = SwipeDirection.Y;
-
-                        if (swipeDirection == SwipeDirection.NONE)
-                            if (Math.round(event.getRawY()) < previousTouchY)
-                                swipeDirection = SwipeDirection.UP;
-                            else swipeDirection = SwipeDirection.DOWN;
-
-                        for (Field field : fieldsHandler.getPrimaryFields())
-                            if (downX > field.getPosX() && downX < (field.getPosX() + fieldWidth)) {
-                                fieldsHandler.addActiveFields(field.getRow(), field.getCol());
-                                break;
-                            }
-                    }
-                    fieldsIsSet = true;
-                }
-
-                /**
-                 * Логическое условие - для проверки, если касание было между полей
-                 */
-                if (fieldsHandler.getActivePrimaryFields() != null) {
-                    for (Field field : fieldsHandler.getActiveFields())
-                        field.setToFinger(currentX - field.getPosX(), currentY - field.getPosY());
-
-                    inSwipe = true;
-                    downX = currentX;
-                    downY = currentY;
-                    prepareFields();
-                }
-            }
         }
 
         previousTouchX = currentX;
         previousTouchY = currentY;
+        return true;
     }
 
-    /**
-     * Метод prepareFields() разворачивает вторичные активные поля
-     * и устанавливает для них соответствующие буквы
-     */
+    private void onDown() {
+
+        startX = currentX;
+        startY = currentY;
+
+        downX = startX;
+        downY = startY;
+
+        reset();
+    }
+
+    private final float SWIPE_DETECT_RADIUS = 10f;
+    private final float MAX_MOVE_DISTANCE = 10f;
+
+    private void onMove() {
+
+
+        float deltaX = currentX - previousTouchX;
+        float deltaY = currentY - previousTouchY;
+
+        if (Math.abs(deltaX) + offsetX > MAX_MOVE_DISTANCE) {
+            offsetX = MAX_MOVE_DISTANCE * ((deltaX > 0) ? 1f : -1f);
+            currentX = previousTouchX + offsetX;
+        }
+
+        if (Math.abs(deltaY) + offsetY > MAX_MOVE_DISTANCE) {
+            offsetY = MAX_MOVE_DISTANCE * ((deltaY > 0) ? 1f : -1f);
+            currentY = previousTouchY + offsetY;
+        }
+
+        if (inSwipe)
+            continueSwipe();
+        else if (directionCanBeDefined())
+            if (!fieldsHandler.isSet())
+                gameStateMachine.swipeGetOutOfRange();
+    }
+
     private void prepareFields() {
-        Field field = fieldsHandler.getActiveSecondaryField();
+        Field field = fieldsHandler.getActiveSecondaryFields();
         field.prepareToFlip(swipeDirection);
 
         switch (swipeDirection) {
@@ -337,43 +392,47 @@ public class GameArea extends Fragment implements View.OnTouchListener {
         }
     }
 
-    private void onUp(Field field) {
-        if(field != null && !inSwipe){
-            selectCell(field);
-        }
-        swipeEnds = false;
+    private void onUp() {
+        offsetX = 0f;
+        offsetY = 0f;
         reset();
     }
 
     private void selectCell(Field field) {
-        if(word.add(field)) {
+        if (word.add(field)) {
             field.setBackgroundResource(R.drawable.selected_field);
             cellSelectionListener.nextLetter();
         }
     }
 
     private void reset() {
-        if (fieldsHandler.isActiveFieldsSet())
-            for (Field field : fieldsHandler.getActiveFields()) {
-                field.resetPositionToOrigin();
-            }
+        resetFieldsToOrigin();
+        fieldsHandler.clean();
+        swipeDirection = SwipeDirection.NONE;
+        swipeAxis = SwipeDirection.NONE;
+        swipeEnds = false;
         inSwipe = false;
     }
 
+    private void resetFieldsToOrigin() {
+        if (fieldsHandler.isSet())
+            for (Field field : fieldsHandler.getActiveFields())
+                field.resetPositionToOrigin();
+    }
 
 
     private float previousTouchX, previousTouchY;
     private SwipeDirection swipeDirection;
 
-    private void continueSwipe(MotionEvent event) {
+    private void continueSwipe() {
         if (swipeAxis == SwipeDirection.X) {
-            float progress = Math.abs((event.getRawX() - downX) / gap);
+            float progress = Math.abs((currentX - downX) / gap);
             for (Field field : fieldsHandler.getActiveFields())
-                field.animate(swipeDirection, progress, event.getRawX() - gameGridPos[0]);
+                field.animate(swipeDirection, progress, currentX - gameGridPos[0]);
         } else {
-            float progress = Math.abs((event.getRawY() - downY) / gap);
+            float progress = Math.abs((currentY - downY) / gap);
             for (Field field : fieldsHandler.getActiveFields())
-                field.animate(swipeDirection, progress, event.getRawY() - gameGridPos[1]);
+                field.animate(swipeDirection, progress, currentY - gameGridPos[1]);
         }
         checkOriginMatches();
     }
@@ -411,22 +470,11 @@ public class GameArea extends Fragment implements View.OnTouchListener {
     }
 
     private void originsMatch() {
-        gameStateMachine.shifted();
         vibrator.vibrate();
         shift();
-        swipeEnds = true;
-        onUp(null);
-        onDown();
+        gameStateMachine.shifted();
     }
 
-    /**
-     * Метод shift() вызывается, в момент когда ряд или столбец
-     * были сдвинуты на одну ячейку в сторону.
-     * <p/>
-     * Метод переназначает каждой сдвинутой ячейке новую букву
-     * в зависимости от соседней от нее ячейки и
-     * направления сдвига
-     */
     private void shift() {
         char tempChar;
         ArrayList<Field> primaryFields = fieldsHandler.getActivePrimaryFields();

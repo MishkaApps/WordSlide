@@ -6,15 +6,27 @@ import android.util.Log;
  * Created by mbolg on 19.06.2017.
  */
 public class GameStateMachine {
-    private enum State {
-        A, B, C, D
+    public State getState() {
+        return state;
     }
+
+    public enum State {
+        A, B, C,
+    }
+
+    public interface StateListener{
+        void notice();
+    }
+
+    private StateListener stateListener;
+
 
     private State state;
 
-    public GameStateMachine(){
+    public GameStateMachine(StateListener listener){
         state = State.A;
         printState();
+        this.stateListener = listener;
     }
 
     /**
@@ -25,6 +37,7 @@ public class GameStateMachine {
         if(state == State.A)
             state = State.B;
         printState();
+        stateListener.notice();
     }
 
     /**
@@ -35,6 +48,7 @@ public class GameStateMachine {
         if(state == State.B)
             state = State.C;
         printState();
+        stateListener.notice();
     }
 
     /**
@@ -45,6 +59,7 @@ public class GameStateMachine {
         if(state == State.C)
             state = State.B;
         printState();
+        stateListener.notice();
     }
 
     /**
@@ -55,10 +70,11 @@ public class GameStateMachine {
     public void touchEnds(){
         state = State.A;
         printState();
+        stateListener.notice();
     }
 
-    private void printState(){
-        L.l("Current state: " + state.toString());
+    private void printState() {
+//        L.l("Current state: " + state.toString());
     }
 
 }
