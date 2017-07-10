@@ -122,7 +122,10 @@ public class Field extends TextView {
     }
 
     public void select() {
-        setBackgroundResource(R.color.selected_field_color);
+        setBackgroundResource(R.drawable.selected_field);
+    }
+    public void deselect() {
+        setBackgroundResource(R.drawable.field);
     }
 
     public void setLetter(char letter) {

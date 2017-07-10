@@ -7,28 +7,45 @@
 
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center">
+        android:gravity="center"
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:id="@+id/tv_display"
-            android:layout_weight="1"
-            android:textSize="@dimen/letter_size"
-            android:textAllCaps="true"
-            android:textStyle="bold"
-            android:layout_gravity="center"
-            android:gravity="center_horizontal|bottom" />
-
-        <fragment
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:name="mb.wordslide.src.GameArea"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/tv_display"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:textAllCaps="true"
+                android:textSize="@dimen/letter_size"
+                android:textStyle="bold" />
+
+            <Button
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:id="@+id/btn_clear_word"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:background="@drawable/clear_word"
+                android:backgroundTint="@color/elements_color" />
+
+
+        </LinearLayout>
+
+        <fragment
             android:id="@+id/game_fragment"
-            android:layout_weight="4"/>
+            android:name="mb.wordslide.src.GameArea"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="4" />
 
     </LinearLayout>
 

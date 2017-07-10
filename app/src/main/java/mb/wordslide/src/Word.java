@@ -8,9 +8,14 @@ import java.util.ArrayList;
 public class Word extends ArrayList<Field> {
     @Override
     public boolean add(Field field) {
-        if (size() == 0)
+        if (size() == 0) {
             return super.add(field);
-        else {
+        } else if (contains(field)) {
+            if (field == get(size() - 1)) {
+                remove(get(size() - 1));
+                return true;
+            } else return false;
+        } else {
             Field lastField = get(size() - 1);
 
             if (field.getCol() == lastField.getCol()

@@ -28,9 +28,9 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     private int[] gameGridPos;
     private Vibrator vibrator;
     private float gap;
-    private int FIELDS_IN_ROW = 6;
+    private int dimension = 6;
     private FieldsHandler fieldsHandler;
-    private CellSelectionListener cellSelectionListener;
+    private WordUpdateListener wordUpdateListener;
     private Word word;
     private GameStateMachine gameStateMachine;
 
@@ -47,12 +47,11 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
         ImmutableTable.Builder<Integer, Integer, Field> primaryFieldsBuilder = new ImmutableTable.Builder<>();
         ImmutableTable.Builder<Integer, Integer, Field> secondaryFieldsBuilder = new ImmutableTable.Builder<>();
         gameStateMachine = new GameStateMachine(this);
-
         LayoutInflater gameAreaInflater = getActivity().getLayoutInflater();
         Field newField;
         GridLayout.LayoutParams layoutParams;
-        for (int row = 0; row < FIELDS_IN_ROW; ++row)
-            for (int col = 0; col < FIELDS_IN_ROW; ++col) {
+        for (int row = 0; row < dimension; ++row)
+            for (int col = 0; col < dimension; ++col) {
                 newField = (Field) gameAreaInflater.inflate(R.layout.field_template, null, false);
                 layoutParams = new GridLayout.LayoutParams();
                 layoutParams.rowSpec = GridLayout.spec(row);
@@ -73,15 +72,15 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                         gap = primaryFields.get(1).getPosX() - primaryFields.get(0).getPosX();
                     }
                 });
-                newField.setType(Field.BorderType.PRIMARY, FIELDS_IN_ROW);
+                newField.setType(Field.BorderType.PRIMARY, dimension);
                 primaryFields.add(newField);
                 primaryFieldsBuilder.put(newField.getRow(), newField.getCol(), newField);
                 newField.setOnTouchListener(this);
             }
 
-        for (int row = 0; row < FIELDS_IN_ROW; ++row)
-            for (int col = 0; col < FIELDS_IN_ROW; ++col) {
-                if (row > 0 && row < FIELDS_IN_ROW - 1 && col > 0 && col < FIELDS_IN_ROW - 1)
+        for (int row = 0; row < dimension; ++row)
+            for (int col = 0; col < dimension; ++col) {
+                if (row > 0 && row < dimension - 1 && col > 0 && col < dimension - 1)
                     continue;
 
                 newField = (Field) gameAreaInflater.inflate(R.layout.field_template, null, false);
@@ -104,7 +103,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                     }
                 });
 
-                newField.setType(Field.BorderType.SECONDARY, FIELDS_IN_ROW);
+                newField.setType(Field.BorderType.SECONDARY, dimension);
                 newField.hide();
                 secondaryFields.add(newField);
                 secondaryFieldsBuilder.put(newField.getRow(), newField.getCol(), newField);
@@ -138,6 +137,9 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
             field.setLetter((char) (65 + counter++));
 //                field.setLetter((char) (65 + random.nextInt(25)));
 
+        downField = null;
+        word = new Word();
+
         return rootView;
     }
 
@@ -146,9 +148,8 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     private ArrayList<Field> secondaryFields;
     private ImmutableTable<Integer, Integer, Field> _primaryFields, _secondaryFields;
 
-    public void addOnCellSelectedListener(CellSelectionListener cellSelectionListener, Word word) {
-        this.cellSelectionListener = cellSelectionListener;
-        this.word = word;
+    public void addOnWordUpdateListener(WordUpdateListener wordUpdateListener) {
+        this.wordUpdateListener = wordUpdateListener;
     }
 
     @Override
@@ -167,38 +168,11 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
         }
     }
 
-//    private void checkForDirectionChange() {
-//        switch (swipeDirection) {
-//            case LEFT:
-////                L.l(currentX  + " > " + startX  + " + "+ SWIPE_DETECT_RADIUS);
-//                if (currentX > startX + SWIPE_DETECT_RADIUS)
-//                    L.l("Direction changed: L -> R");
-//                break;
-//            case RIGHT:
-//                if (currentX < startX - SWIPE_DETECT_RADIUS)
-//                    L.l("Direction changed: R -> L");
-//                break;
-//            case UP:
-//                if (currentY > startY + SWIPE_DETECT_RADIUS)
-//                    L.l("Direction changed: U -> D");
-//                break;
-//            case DOWN:
-//                if (currentY < startY - SWIPE_DETECT_RADIUS)
-//                    L.l("Direction changed: D -> U");
-//                break;
-//        }
-//    }
-
     private boolean directionCanBeDefined() {
-        if (Math.sqrt(Math.abs(currentX - downX) + Math.abs(currentY - downY)) > SWIPE_DETECT_RADIUS)
-            return true;
-        else
-            return false;
+        return (Math.sqrt(Math.abs(currentX - downX) + Math.abs(currentY - downY)) > SWIPE_DETECT_RADIUS);
     }
 
     private void startShift() {
-
-        L.l(downX + ", " + downY);
         if (Math.abs(currentX - downX) >= Math.abs(currentY - downY)) {
             swipeAxis = SwipeDirection.X;
 
@@ -227,8 +201,6 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                 }
         }
 
-        L.l(swipeDirection.toString());
-
         for (Field field : fieldsHandler.getActiveFields())
             field.setToFinger(currentX - field.getPosX(), currentY - field.getPosY());
 
@@ -236,6 +208,13 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
         downX = currentX;
         downY = currentY;
         prepareFields();
+    }
+
+    public void clearWord() {
+        word.clear();
+        wordUpdateListener.wordUpdated(word);
+        for (Field field : fieldsHandler.getPrimaryFields())
+            field.deselect();
     }
 
     private class FieldsHandler {
@@ -308,15 +287,16 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     }
 
     float currentX, currentY;
-
     float offsetX, offsetY;
+    private Field downField;
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         currentX = event.getRawX();
         currentY = event.getRawY();
 
-
+        if (v.getClass() == Field.class)
+            downField = (Field) v;
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
@@ -350,17 +330,15 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     private final float MAX_MOVE_DISTANCE = 10f;
 
     private void onMove() {
-
-
         float deltaX = currentX - previousTouchX;
         float deltaY = currentY - previousTouchY;
 
-        if (Math.abs(deltaX) + offsetX > MAX_MOVE_DISTANCE) {
+        if (Math.abs(deltaX) - offsetX > MAX_MOVE_DISTANCE) {
             offsetX = MAX_MOVE_DISTANCE * ((deltaX > 0) ? 1f : -1f);
             currentX = previousTouchX + offsetX;
         }
 
-        if (Math.abs(deltaY) + offsetY > MAX_MOVE_DISTANCE) {
+        if (Math.abs(deltaY) - offsetY > MAX_MOVE_DISTANCE) {
             offsetY = MAX_MOVE_DISTANCE * ((deltaY > 0) ? 1f : -1f);
             currentY = previousTouchY + offsetY;
         }
@@ -381,13 +359,13 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                 field.setLetter(_primaryFields.get(field.getRow(), 0).getLetter());
                 break;
             case RIGHT:
-                field.setLetter(_primaryFields.get(field.getRow(), FIELDS_IN_ROW - 1).getLetter());
+                field.setLetter(_primaryFields.get(field.getRow(), dimension - 1).getLetter());
                 break;
             case UP:
                 field.setLetter(_primaryFields.get(0, field.getCol()).getLetter());
                 break;
             case DOWN:
-                field.setLetter(_primaryFields.get(FIELDS_IN_ROW - 1, field.getCol()).getLetter());
+                field.setLetter(_primaryFields.get(dimension - 1, field.getCol()).getLetter());
                 break;
         }
     }
@@ -395,13 +373,20 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     private void onUp() {
         offsetX = 0f;
         offsetY = 0f;
+
+        if (!directionCanBeDefined())
+            clickOnCell(downField);
+
         reset();
     }
 
-    private void selectCell(Field field) {
+    private void clickOnCell(Field field) {
         if (word.add(field)) {
-            field.setBackgroundResource(R.drawable.selected_field);
-            cellSelectionListener.nextLetter();
+            for (Field f : fieldsHandler.getPrimaryFields())
+                f.deselect();
+            for (Field f : word)
+                f.select();
+            wordUpdateListener.wordUpdated(word);
         }
     }
 
@@ -487,8 +472,8 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                 primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
                 break;
             case RIGHT:
-                tempChar = primaryFields.get(FIELDS_IN_ROW - 1).getLetter();
-                for (int index = FIELDS_IN_ROW - 1; index > 0; index--) {
+                tempChar = primaryFields.get(dimension - 1).getLetter();
+                for (int index = dimension - 1; index > 0; index--) {
                     primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
                 }
                 primaryFields.get(0).setLetter(tempChar);
@@ -501,8 +486,8 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                 primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
                 break;
             case DOWN:
-                tempChar = primaryFields.get(FIELDS_IN_ROW - 1).getLetter();
-                for (int index = FIELDS_IN_ROW - 1; index > 0; index--) {
+                tempChar = primaryFields.get(dimension - 1).getLetter();
+                for (int index = dimension - 1; index > 0; index--) {
                     primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
                 }
                 primaryFields.get(0).setLetter(tempChar);
