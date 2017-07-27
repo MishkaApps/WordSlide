@@ -7,10 +7,10 @@ import android.util.Log;
  */
 public class L {
     public static void l(String text){
-        Log.d("my log", text);
+        Log.d("mishka log", text);
     }
 
     public static void l() {
-        Log.d("my log", "flag");
+        Log.d("mishka_log", "flag");
     }
 }

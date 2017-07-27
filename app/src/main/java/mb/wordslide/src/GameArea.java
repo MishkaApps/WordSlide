@@ -33,6 +33,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     private WordUpdateListener wordUpdateListener;
     private Word word;
     private GameStateMachine gameStateMachine;
+    private mb.wordslide.src.Game.GameArea testGameArea;
 
     @Nullable
     @Override
@@ -139,6 +140,8 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
 
         downField = null;
         word = new Word();
+
+        testGameArea = new mb.wordslide.src.Game.GameArea(dimension);
 
         return rootView;
     }
@@ -333,6 +336,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
         float deltaX = currentX - previousTouchX;
         float deltaY = currentY - previousTouchY;
 
+        //finger move check -----------------
         if (Math.abs(deltaX) - offsetX > MAX_MOVE_DISTANCE) {
             offsetX = MAX_MOVE_DISTANCE * ((deltaX > 0) ? 1f : -1f);
             currentX = previousTouchX + offsetX;
@@ -342,7 +346,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
             offsetY = MAX_MOVE_DISTANCE * ((deltaY > 0) ? 1f : -1f);
             currentY = previousTouchY + offsetY;
         }
-
+        //-----------------------------------
         if (inSwipe)
             continueSwipe();
         else if (directionCanBeDefined())
@@ -470,6 +474,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                     primaryFields.get(index).setLetter(primaryFields.get(index + 1).getLetter());
                 }
                 primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
+                testGameArea.shiftRowLeft(primaryFields.get(0).getRow());
                 break;
             case RIGHT:
                 tempChar = primaryFields.get(dimension - 1).getLetter();
@@ -477,6 +482,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                     primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
                 }
                 primaryFields.get(0).setLetter(tempChar);
+                testGameArea.shiftRowRight(primaryFields.get(0).getRow());
                 break;
             case UP:
                 tempChar = primaryFields.get(0).getLetter();
@@ -484,6 +490,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                     primaryFields.get(index).setLetter(primaryFields.get(index + 1).getLetter());
                 }
                 primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
+                testGameArea.shiftColUp(primaryFields.get(0).getCol());
                 break;
             case DOWN:
                 tempChar = primaryFields.get(dimension - 1).getLetter();
@@ -491,6 +498,7 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                     primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
                 }
                 primaryFields.get(0).setLetter(tempChar);
+                testGameArea.shiftColDown(primaryFields.get(0).getCol());
                 break;
         }
     }
