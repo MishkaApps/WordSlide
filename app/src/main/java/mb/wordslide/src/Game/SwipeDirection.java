@@ -6,6 +6,10 @@ package mb.wordslide.src.Game;
 public class SwipeDirection {
     Direction direction;
 
+    public SwipeDirection(){
+        direction = Direction.NONE;
+    }
+
     boolean isHorizontal(){
         if(direction == Direction.LEFT || direction == Direction.RIGHT)
             return true;
@@ -13,6 +17,6 @@ public class SwipeDirection {
     }
 
     public enum Direction {
-        LEFT, RIGHT, UP, DOWN;
+        LEFT, RIGHT, UP, DOWN, NONE
     }
 }

@@ -35,6 +35,13 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     private GameStateMachine gameStateMachine;
     private mb.wordslide.src.Game.GameArea testGameArea;
 
+//    public void logParameters() {
+//        L.l("-----------------------------------------");
+//        L.l("fields width: " + fieldWidth);
+//        L.l("gap: " + gap);
+//        L.l("game grid pos: [ "  + gameGridPos[0] + ", " + gameGridPos[1] + " ]");
+//    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -141,7 +148,6 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
         downField = null;
         word = new Word();
 
-        testGameArea = new mb.wordslide.src.Game.GameArea(dimension);
 
         return rootView;
     }
@@ -312,7 +318,6 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
                 gameStateMachine.touchEnds();
                 break;
         }
-
         previousTouchX = currentX;
         previousTouchY = currentY;
         return true;

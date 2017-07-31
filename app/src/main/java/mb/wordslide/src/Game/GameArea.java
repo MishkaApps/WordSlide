@@ -1,29 +1,32 @@
 package mb.wordslide.src.Game;
 
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableTable;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 
+import mb.wordslide.src.Game.Field.Field;
+import mb.wordslide.src.Game.Field.FieldView1;
 import mb.wordslide.src.L;
 
 /**
  * Created by mbolg on 26.07.2017.
  */
 public class GameArea {
-    private ImmutableTable<Integer, Integer, Field> fields;
-    private int areaDimension;
+    private ImmutableTable<Integer, Integer, FieldView1> fields;
+    private int gameAreaDimension;
 
-    public GameArea(int areaDimension) {
-        ImmutableTable.Builder<Integer, Integer, Field> fieldsBuilder = new ImmutableTable.Builder<>();
-        for (int row = 0; row < areaDimension; ++row)
-            for (int col = 0; col < areaDimension; ++col) {
-                fieldsBuilder.put(row, col, new Field(row, col));
-            }
-        fields = fieldsBuilder.build();
-        this.areaDimension = areaDimension;
+    public int getGameAreaDimension() {
+        return gameAreaDimension;
+    }
+
+    public GameArea(int areaDimension, ArrayList<FieldView1> fields) {
+        ImmutableTable.Builder<Integer, Integer, FieldView1> fieldsBuilder = new ImmutableTable.Builder<>();
+        for(FieldView1 field: fields)
+                fieldsBuilder.put(field.getRow(), field.getCol(), field);
+
+        this.fields = fieldsBuilder.build();
+        this.gameAreaDimension = areaDimension;
         fillAreaWithLetters();
         printGameArea();
     }
@@ -42,23 +45,23 @@ public class GameArea {
     }
 
     private void fillAreaWithLetters() {
-        for (Field field : fields.values()) {
+        for (FieldView1 field : fields.values()) {
             field.setLetter((char) (80 + field.getRow() + field.getCol()));
         }
     }
 
     public void shiftRowLeft(int row) {
         char tempChar = fields.get(row, 0).getLetter();
-        for (int col = 0; col < areaDimension - 1; col++) {
+        for (int col = 0; col < gameAreaDimension - 1; col++) {
             fields.get(row, col).setLetter(fields.get(row, col + 1).getLetter());
         }
-        fields.get(row, areaDimension - 1).setLetter(tempChar);
+        fields.get(row, gameAreaDimension - 1).setLetter(tempChar);
         printGameArea();
     }
 
     public void shiftRowRight(int row) {
-        char tempChar = fields.get(row, areaDimension - 1).getLetter();
-        for (int col = areaDimension - 1; col > 0; col--) {
+        char tempChar = fields.get(row, gameAreaDimension - 1).getLetter();
+        for (int col = gameAreaDimension - 1; col > 0; col--) {
             fields.get(row, col).setLetter(fields.get(row, col - 1).getLetter());
         }
         fields.get(row, 0).setLetter(tempChar);
@@ -67,24 +70,27 @@ public class GameArea {
 
     public void shiftColUp(int col) {
         char tempChar = fields.get(0, col).getLetter();
-        for (int row = 0; row < areaDimension - 1; row++) {
+        for (int row = 0; row < gameAreaDimension - 1; row++) {
             fields.get(row, col).setLetter(fields.get(row + 1, col).getLetter());
         }
-        fields.get(areaDimension - 1, col).setLetter(tempChar);
+        fields.get(gameAreaDimension - 1, col).setLetter(tempChar);
         printGameArea();
     }
 
     public void shiftColDown(int col) {
-        char tempChar = fields.get(areaDimension - 1, col).getLetter();
-        for (int row = areaDimension - 1; row > 0; row--) {
+        char tempChar = fields.get(gameAreaDimension - 1, col).getLetter();
+        for (int row = gameAreaDimension - 1; row > 0; row--) {
             fields.get(row, col).setLetter(fields.get(row - 1, col).getLetter());
         }
         fields.get(0, col).setLetter(tempChar);
         printGameArea();
     }
 
-    public ArrayList<Field> getFieldsArrayList() {
+    public ArrayList<FieldView1> getFieldsArrayList() {
         return new ArrayList<>(fields.values());
     }
 
+    public void setFields() {
+
+    }
 }
