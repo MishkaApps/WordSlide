@@ -470,42 +470,42 @@ public class GameArea extends Fragment implements View.OnTouchListener, GameStat
     }
 
     private void shift() {
-        char tempChar;
-        ArrayList<Field> primaryFields = fieldsHandler.getActivePrimaryFields();
-        switch (swipeDirection) {
-            case LEFT:
-                tempChar = primaryFields.get(0).getLetter();
-                for (int index = 0; index < primaryFields.size() - 1; index++) {
-                    primaryFields.get(index).setLetter(primaryFields.get(index + 1).getLetter());
-                }
-                primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
-                testGameArea.shiftRowLeft(primaryFields.get(0).getRow());
-                break;
-            case RIGHT:
-                tempChar = primaryFields.get(dimension - 1).getLetter();
-                for (int index = dimension - 1; index > 0; index--) {
-                    primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
-                }
-                primaryFields.get(0).setLetter(tempChar);
-                testGameArea.shiftRowRight(primaryFields.get(0).getRow());
-                break;
-            case UP:
-                tempChar = primaryFields.get(0).getLetter();
-                for (int index = 0; index < primaryFields.size() - 1; index++) {
-                    primaryFields.get(index).setLetter(primaryFields.get(index + 1).getLetter());
-                }
-                primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
-                testGameArea.shiftColUp(primaryFields.get(0).getCol());
-                break;
-            case DOWN:
-                tempChar = primaryFields.get(dimension - 1).getLetter();
-                for (int index = dimension - 1; index > 0; index--) {
-                    primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
-                }
-                primaryFields.get(0).setLetter(tempChar);
-                testGameArea.shiftColDown(primaryFields.get(0).getCol());
-                break;
-        }
+//        char tempChar;
+//        ArrayList<Field> primaryFields = fieldsHandler.getActivePrimaryFields();
+//        switch (swipeDirection) {
+//            case LEFT:
+//                tempChar = primaryFields.get(0).getLetter();
+//                for (int index = 0; index < primaryFields.size() - 1; index++) {
+//                    primaryFields.get(index).setLetter(primaryFields.get(index + 1).getLetter());
+//                }
+//                primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
+//                testGameArea.shiftRowLeft(primaryFields.get(0).getRow());
+//                break;
+//            case RIGHT:
+//                tempChar = primaryFields.get(dimension - 1).getLetter();
+//                for (int index = dimension - 1; index > 0; index--) {
+//                    primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
+//                }
+//                primaryFields.get(0).setLetter(tempChar);
+//                testGameArea.shiftRowRight(primaryFields.get(0).getRow());
+//                break;
+//            case UP:
+//                tempChar = primaryFields.get(0).getLetter();
+//                for (int index = 0; index < primaryFields.size() - 1; index++) {
+//                    primaryFields.get(index).setLetter(primaryFields.get(index + 1).getLetter());
+//                }
+//                primaryFields.get(primaryFields.size() - 1).setLetter(tempChar);
+//                testGameArea.shiftColUp(primaryFields.get(0).getCol());
+//                break;
+//            case DOWN:
+//                tempChar = primaryFields.get(dimension - 1).getLetter();
+//                for (int index = dimension - 1; index > 0; index--) {
+//                    primaryFields.get(index).setLetter(primaryFields.get(index - 1).getLetter());
+//                }
+//                primaryFields.get(0).setLetter(tempChar);
+//                testGameArea.shiftColDown(primaryFields.get(0).getCol());
+//                break;
+//        }
     }
 
 

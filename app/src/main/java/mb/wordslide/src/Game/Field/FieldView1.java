@@ -4,21 +4,28 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.widget.TextView;
 
+import mb.wordslide.R;
+import mb.wordslide.src.L;
+
 /**
  * Created by mbolg on 30.07.2017.
  */
-public abstract class FieldView1 extends TextView implements FieldLogic{
+public abstract class FieldView1 extends android.support.v7.widget.AppCompatTextView implements FieldLogic {
     protected float distanceToFingerX, distanceToFingerY;
-    private float initialPositionX, initialPositionY;
-    private int row, col;
+    protected float initialPositionX, initialPositionY;
+    protected int row, col;
     private char letter;
+    protected int gameAreaDimension;
 
     public FieldView1(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
+    public void setGameAreaDimension(int gameAreaDimension) {
+        this.gameAreaDimension = gameAreaDimension;
+    }
 
-    public void saveInitialPosition(){
+    public void saveInitialPosition() {
         initialPositionX = getX();
         initialPositionY = getY();
     }
@@ -35,10 +42,13 @@ public abstract class FieldView1 extends TextView implements FieldLogic{
         return pos[1];
     }
 
-    public float getAbsolutePositionX(){
+    public float getAbsolutePositionX() {
         return getX();
     }
 
+    public float getAbsolutePositionY() {
+        return getY();
+    }
 
     public void setDistanceToFinger(float x, float y) {
         this.distanceToFingerX = x;
@@ -47,6 +57,10 @@ public abstract class FieldView1 extends TextView implements FieldLogic{
 
     public float getInitialPositionX() {
         return initialPositionX;
+    }
+
+    public float getInitialPositionY() {
+        return initialPositionY;
     }
 
     public void resetPositionToInitial() {
@@ -58,19 +72,55 @@ public abstract class FieldView1 extends TextView implements FieldLogic{
         this.letter = letter;
         setText("" + letter);
     }
+
     public int getCol() {
         return col;
     }
+
     public int getRow() {
         return row;
     }
+
     public char getLetter() {
         return letter;
     }
-    abstract public void moveLeft(float progress, float fingerPositionX);
+
+    abstract public void animateLeft(float progress, float fingerPositionX);
+    abstract public void animateRight(float progress, float fingerPositionX);
+    abstract public void animateUp(float progress, float fingerPositionY);
+    abstract public void animateDown(float progress, float fingerPositionY);
+
     @Override
     public void setPosition(int row, int col) {
         this.row = row;
         this.col = col;
     }
+
+    public void resetRotationToInitial() {
+        animate().rotationX(0).setDuration(0).start();
+        animate().rotationY(0).setDuration(0).start();
+    }
+
+    public void setSelectedBackground() {
+        setBackground(getResources().getDrawable(R.drawable.selected_field));
+    }
+
+    public void setDefaultBackground() {
+        setBackground(getResources().getDrawable(R.drawable.field));
+    }
+
+    private final long HIDING_DURATION = 200l;
+    private final long SHOWING_DURATION = 200l;
+    public void hide(){
+        animate().scaleXBy(-1.0f).setDuration(HIDING_DURATION);
+        animate().scaleYBy(-1.0f).setDuration(HIDING_DURATION);
+    }
+
+    public void show(){
+        setScaleX(0);
+        setScaleY(0);
+        animate().scaleXBy(1.0f).setDuration(SHOWING_DURATION);
+        animate().scaleYBy(1.0f).setDuration(SHOWING_DURATION);
+    }
+
 }

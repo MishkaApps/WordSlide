@@ -16,36 +16,48 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_gravity="center"
-            android:gravity="center">
-            <TextView
-                android:id="@+id/tv_display"
-                android:layout_width="wrap_content"
+            android:orientation="horizontal">
+
+            <mb.wordslide.src.Game.Score
+                android:id="@+id/score"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:textSize="@dimen/letter_size"/>
+            <Space
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:textAllCaps="true"
-                android:textSize="@dimen/letter_size"
-                android:textStyle="bold" />
-
-            <Button
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:id="@+id/btn_clear_word"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:background="@drawable/clear_word"
-                android:backgroundTint="@color/elements_color" />
-
-
+                android:layout_weight="1"/>
         </LinearLayout>
+
+        <fragment
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:name="mb.wordslide.src.Game.DisplayFragment"
+            android:id="@+id/display"/>
 
         <fragment
             android:id="@+id/game_area_fragment"
             android:name="mb.wordslide.src.Game.GameAreaFragment"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="4" />
+            android:layout_weight="5" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+            <Button
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:id="@+id/ok"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:background="@drawable/ok_button"
+                android:text="OK"/>
+        </FrameLayout>
 
     </LinearLayout>
 

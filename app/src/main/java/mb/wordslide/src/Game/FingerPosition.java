@@ -15,6 +15,4 @@ public class FingerPosition {
     public FingerPosition copy() {
         return new FingerPosition(x, y);
     }
-
-
 }
