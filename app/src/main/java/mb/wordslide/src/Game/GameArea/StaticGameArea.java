@@ -16,7 +16,7 @@ import mb.wordslide.src.Game.Field.FieldView1;
 /**
  * Created by mbolg on 26.07.2017.
  */
-public class GameArea {
+public class StaticGameArea {
     protected GridLayout gameAreaGrid;
     protected static final int FIELD_SIZE = 150;
     private ImmutableTable<Integer, Integer, FieldView1> fields;
@@ -24,8 +24,9 @@ public class GameArea {
     protected LayoutInflater inflater;
     protected int gameAreaOffsetX, gameAreaOffsetY;
     protected ArrayList<OnWordChangedListener> wordChangedListener;
+    protected ShiftListener shiftListener;
 
-    public GameArea(int areaDimension, LayoutInflater inflater, GridLayout gameAreaGrid) {
+    public StaticGameArea(int areaDimension, LayoutInflater inflater, GridLayout gameAreaGrid) {
         this.gameAreaDimension = areaDimension;
         this.inflater = inflater;
         this.gameAreaGrid = gameAreaGrid;
@@ -149,5 +150,9 @@ public class GameArea {
 
     protected void setNewLetter(FieldView1 field) {
         field.setLetter(getRandomLetter());
+    }
+
+    public void setOnShiftListener(ShiftListener shiftListener){
+        this.shiftListener = shiftListener;
     }
 }

@@ -1,5 +1,6 @@
 package mb.wordslide.src.Game;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -9,13 +10,13 @@ import java.util.ArrayList;
 
 import mb.wordslide.R;
 import mb.wordslide.src.Game.Field.BorderField;
-import mb.wordslide.src.Game.Field.Field;
 import mb.wordslide.src.Game.Field.FieldView1;
+import mb.wordslide.src.Vibrator;
 
 /**
  * Created by mbolg on 26.07.2017.
  */
-public class AnimatedGameArea extends GameArea implements View.OnTouchListener, OnClearWordListener {
+public class AnimatedGameArea extends StaticGameArea implements View.OnTouchListener, OnClearWordListener {
     private FingerPosition currentFingerPosition;
     private FingerPosition fingerDownPosition;
     private boolean inSwipe;
@@ -26,14 +27,16 @@ public class AnimatedGameArea extends GameArea implements View.OnTouchListener, 
     private FieldView1 touchedField;
     private Word word;
     private boolean fingerDownImitated;
+    private Vibrator vibrator;
 
     public AnimatedGameArea(GridLayout gameAreaGrid,
-                            LayoutInflater inflater) {
+                            LayoutInflater inflater, Context context) {
         super(6, inflater, gameAreaGrid);
 
         swipeDirection = new SwipeDirection();
         activeFields = new ArrayList<>();
         word = new Word();
+        vibrator = new Vibrator(context);
         setOnTouchListenersForFieldViews();
     }
 
@@ -209,16 +212,14 @@ public class AnimatedGameArea extends GameArea implements View.OnTouchListener, 
                     field.animateLeft(progress, relativeFingerPositionX);
                     if (isActiveFieldsShiftedLeft()) {
                         shiftRowLeft(activeRow);
-                        resetGameAreaState();
-                        imitateFingerDown();
+                        onShiftComplete();
                         break;
                     }
                 } else if (swipeDirection.direction == SwipeDirection.Direction.RIGHT) {
                     field.animateRight(progress, relativeFingerPositionX);
                     if (isActiveFieldsShiftedRight()) {
                         shiftRowRight(activeRow);
-                        resetGameAreaState();
-                        imitateFingerDown();
+                        onShiftComplete();
                         break;
                     }
                 }
@@ -235,22 +236,31 @@ public class AnimatedGameArea extends GameArea implements View.OnTouchListener, 
                     field.animateUp(progress, relativeFingerPositionY);
                     if (isActiveFieldsShiftedUp()) {
                         shiftColUp(activeCol);
-                        resetGameAreaState();
-                        imitateFingerDown();
+                        onShiftComplete();
                         break;
                     }
                 } else if (swipeDirection.direction == SwipeDirection.Direction.DOWN) {
                     field.animateDown(progress, relativeFingerPositionY);
                     if (isActiveFieldsShiftedDown()) {
                         shiftColDown(activeCol);
-                        resetGameAreaState();
-                        imitateFingerDown();
+                        onShiftComplete();
                         break;
                     }
                 }
             }
         }
 
+    }
+
+    private void onShiftComplete(){
+        resetGameAreaState();
+        imitateFingerDown();
+        vibrate();
+        shiftListener.shifted();
+    }
+
+    private void vibrate() {
+        vibrator.vibrate();
     }
 
     private float calculateProgressWhileMovingLeft() {
@@ -385,6 +395,9 @@ public class AnimatedGameArea extends GameArea implements View.OnTouchListener, 
 
     @Override
     public void notifyWordCleared() {
+        word.clear();
+        updateSelectedFieldBackground();
+        notifyWordChanged();
     }
 
     @Override
