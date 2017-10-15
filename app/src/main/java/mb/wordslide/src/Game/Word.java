@@ -1,17 +1,16 @@
 package mb.wordslide.src.Game;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-import mb.wordslide.src.Game.Field.FieldView1;
+import mb.wordslide.src.Game.Field.Field;
 
 /**
  * Created by mbolg on 10.08.2017.
  */
 
-public class Word extends ArrayList<FieldView1>{
+public class Word extends ArrayList<Field>{
     @Override
-    public boolean add(FieldView1 field) {
+    public boolean add(Field field) {
         if (size() == 0) {
             return super.add(field);
         } else if (contains(field)) {
@@ -20,7 +19,7 @@ public class Word extends ArrayList<FieldView1>{
                 return true;
             } else return false;
         } else {
-            FieldView1 lastField = get(size() - 1);
+            Field lastField = get(size() - 1);
 
             if (field.getCol() == lastField.getCol()
                     && field.getRow() == lastField.getRow()) {
@@ -39,12 +38,16 @@ public class Word extends ArrayList<FieldView1>{
 
     public String getWord() {
         String temp = "";
-        for (FieldView1 field : this)
+        for (Field field : this)
             temp += field.getLetter();
         return temp;
     }
 
     public int getScore() {
+        return size();
+    }
+
+    public int getCost() {
         return size();
     }
 }

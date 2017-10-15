@@ -1,6 +1,5 @@
 package mb.wordslide.src.Game;
 
-import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -8,28 +7,32 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import mb.wordslide.R;
-import mb.wordslide.src.L;
+import mb.wordslide.src.Configurations;
+import mb.wordslide.src.Game.GameArea.AnimatedGameArea;
+import mb.wordslide.src.Game.GameControl.GameController;
+import mb.wordslide.src.Game.GameControl.GameOverListener;
+import mb.wordslide.src.Game.GameControl.GameProgressBar;
+import mb.wordslide.src.Vibrator;
 import mb.wordslide.src.Vocabulary.Vocabulary;
 
-public class GameActivity extends AppCompatActivity implements View.OnClickListener, OnWordChangedListener, OnGameEndsListener {
+public abstract class GameActivity extends AppCompatActivity implements View.OnClickListener, OnWordChangedListener, GameOverListener {
     private DisplayFragment display;
     private Button btnOk;
     private Score score;
     private Word word;
-    private ShiftCounter shiftCounter;
     private Vocabulary vocabulary;
-    private GameAreaFragment gameAreaFragment;
+    protected AnimatedGameArea animatedGameArea;
+    protected GameController gameController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game2);
 
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        gameAreaFragment = (GameAreaFragment) fragmentManager.findFragmentById(R.id.game_area_fragment);
+        AnimatedGameAreaProvider gameAreaProvider = (AnimatedGameAreaProvider) getSupportFragmentManager().findFragmentById(R.id.game_area_fragment);
+        animatedGameArea = gameAreaProvider.getAnimatedGameArea();
 
         display = (DisplayFragment) getSupportFragmentManager().findFragmentById(R.id.display);
-        shiftCounter = (ShiftCounter) findViewById(R.id.shift_counter);
         btnOk = (Button) findViewById(R.id.ok);
         btnOk.setOnClickListener(this);
         hideOkButton();
@@ -37,44 +40,54 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         score = (Score) findViewById(R.id.score);
 
         vocabulary = new Vocabulary(getResources());
+
         setGameAreaWordChangedListeners();
         setGameAreaAsWordClearListener();
-        setShiftCounterAsShiftListener();
-        shiftCounter.addOnGameEndsListener(this);
+
+        GameProgressBar gameProgressBar = (GameProgressBar)findViewById(R.id.game_controller);
+        gameController = getConcreteGameOverController();
+        gameProgressBar.setConcreteController(gameController);
     }
 
+    protected abstract GameController getConcreteGameOverController();
 
     private void setGameAreaWordChangedListeners() {
-        gameAreaFragment.addOnWordUpdatedListener(display);
-        gameAreaFragment.addOnWordUpdatedListener(this);
+        animatedGameArea.addWordUpdatedListener(display);
+        animatedGameArea.addWordUpdatedListener(this);
     }
 
     private void setGameAreaAsWordClearListener() {
-        display.setOnClearWordListener(gameAreaFragment.getGameArea());
-    }
-
-    private void setShiftCounterAsShiftListener() {
-        gameAreaFragment.getGameArea().setOnShiftListener(shiftCounter);
+        display.setOnClearWordListener(animatedGameArea);
     }
 
     @Override
     public void onClick(View v) {
         if (v == btnOk) {
-                addWordToScore();
+            try {
+                addWord();
+            } catch (WordDoesNotExist wordDoesNotExist) {
+                onWordDoesNotExist();
+            }
         }
     }
 
-    private void notifyUserWordDoesNotExist() {
-        Toast.makeText(this, "word does not exist", Toast.LENGTH_SHORT).show();
-    }
+    private void addWord() throws WordDoesNotExist {
+        if(Configurations.CHECK_WORDS)
+            if(!checkWord())
+                throw new WordDoesNotExist();
 
-    private void addWordToScore() {
         score.addWord(word);
+        gameController.addBonus(word.getCost());
         display.clearUsedWord();
     }
 
-    private void clearWordAndHideButtons() {
-        hideOkButton();
+    private boolean checkWord(){
+        return true || vocabulary.exist(word.getWord());
+    }
+
+    private void onWordDoesNotExist() {
+        display.notifyUserWordIncorrect();
+        new Vibrator(this).vibrate();
     }
 
     private void hideOkButton() {
@@ -94,7 +107,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void notifyGameEnds() {
+    public void gameOver() {
         Toast.makeText(this, "Game ends", Toast.LENGTH_SHORT).show();
     }
 }

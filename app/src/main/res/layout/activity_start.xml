@@ -40,23 +40,24 @@
         android:layout_height="200dp" />
 
     <Button
-        android:id="@+id/play"
+        android:id="@+id/moves_game"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:background="@drawable/capsule"
-        android:text="Play" />
+        android:text="Moves" />
 
     <Space
         android:layout_width="20px"
         android:layout_height="20dp" />
 
     <Button
+        android:id="@+id/time_game"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:background="@drawable/capsule"
-        android:text="Records" />
+        android:text="Time" />
 
     <Space
         android:layout_width="20px"

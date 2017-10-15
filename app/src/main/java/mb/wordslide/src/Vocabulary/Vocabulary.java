@@ -22,10 +22,7 @@ public class Vocabulary {
     }
 
     public boolean exist(String word) {
-        Character firstChar = word.charAt(0);
-
         boolean exist = parseXmlVocAndCheck(word);
-
         return exist;
     }
 

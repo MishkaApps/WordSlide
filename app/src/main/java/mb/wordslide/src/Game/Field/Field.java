@@ -1,149 +1,169 @@
 package mb.wordslide.src.Game.Field;
 
+import android.animation.Animator;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.View;
+import android.widget.TextView;
+
+import java.util.Random;
+
+import mb.wordslide.R;
+import mb.wordslide.src.L;
+import mb.wordslide.src.Vibrator;
 
 /**
  * Created by mbolg on 30.07.2017.
  */
-public class Field extends FieldView1 {
-
+public abstract class Field extends android.support.v7.widget.AppCompatTextView {
+    protected float distanceToFingerX, distanceToFingerY;
+    protected float initialPositionX, initialPositionY;
+    protected int row, col;
+    private char letter;
+    protected int gameAreaDimension;
+    protected int gameAreaOffsetX, gameAreaOffsetY;
 
     public Field(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    // todo: пиздос криво, необходимо объектно оториентировать эту хуйню
-    @Override
-    public void animateLeft(float progress, float fingerPositionX) {
-        if (col == 0) {
-            moveAndRotateLeft(progress);
-        } else {
-            moveLeft(fingerPositionX);
-        }
+    public void setGameAreaDimension(int gameAreaDimension) {
+        this.gameAreaDimension = gameAreaDimension;
     }
 
-    @Override
-    public void animateRight(float progress, float fingerPositionX) {
-        if (col == gameAreaDimension - 1) {
-            moveAndRotateRight(progress);
-        } else {
-            moveRight(fingerPositionX);
-        }
+    public void saveInitialPosition() {
+        initialPositionX = getPositionX();
+        initialPositionY = getPositionY();
+        if (getClass() == BorderField.class && row == 0)
+            L.l("Saving initial field position: " + getPositionAsString());
     }
 
-    private void moveAndRotateLeft(float progress) {
-        float rotationAdjust = 1f - (float) Math.pow((1 - progress), 3);
-        float startRotation = 0f;
-        float rotationMultiplier = 0;
-
-        float offset;
-        float offsetMultiplier = 0;
-        float origin = 0;
-
-        origin = this.initialPositionX;
-        rotationMultiplier = -1f;
-        offsetMultiplier = -progress;
-
-        offset = origin + (getWidth() / 2) * offsetMultiplier;
-
-        animate().rotationY(startRotation + rotationMultiplier * 90f * rotationAdjust).setDuration(0).start();
-        animate().x(offset).setDuration(0).start();
+    public float getPositionX() {
+        int[] pos = {0, 0};
+        getLocationOnScreen(pos);
+        return (float) pos[0];
     }
 
-    // todo: у некоторых методов нет start(), у некоторых есть. Хуета выходит
-    private void moveLeft(float fingerPositionX) {
-        animate().x(fingerPositionX - distanceToFingerX).setDuration(0);
+    public float getPositionY() {
+        int[] pos = {0, 0};
+        getLocationOnScreen(pos);
+        return pos[1];
     }
 
-    private void moveAndRotateRight(float progress) {
-        float rotationAdjust = (1f - (float) Math.pow((1 - progress), 3));
-        float startRotation = 0f;
-        float rotationMultiplier = 0;
+//    public float getAbsolutePositionX() {
+//        return getX();
+//    }
+//    public float getAbsolutePositionY() {
+//        return getY();
+//    }
 
-        float offset;
-        float offsetMultiplier = 0;
-        float origin = 0;
-
-        origin = this.initialPositionX;
-        rotationMultiplier = 1f;
-        offsetMultiplier = (progress);
-
-        offset = origin + (getWidth() / 2) * offsetMultiplier;
-
-        animate().rotationY(startRotation + rotationMultiplier * 90f * rotationAdjust).setDuration(0).start();
-        animate().x(offset).setDuration(0).start();
+    public void setDistanceToFinger(float x, float y) {
+        distanceToFingerX = x;
+        distanceToFingerY = y;
     }
 
-    private void moveRight(float fingerPositionX) {
-        animate().x(fingerPositionX - distanceToFingerX).setDuration(0).start();
+    public float getInitialPositionX() {
+        return initialPositionX;
+    }
+
+    public float getInitialPositionY() {
+        return initialPositionY;
+    }
+
+    public void setLetter(char letter) {
+        this.letter = letter;
+        setText("" + letter);
+    }
+
+    public int getCol() {
+        return col;
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    public char getLetter() {
+        return letter;
+    }
+
+    abstract public void animateLeft(float progress, float fingerPositionX);
+
+    abstract public void animateRight(float progress, float fingerPositionX);
+
+    abstract public void animateUp(float progress, float fingerPositionY);
+
+    abstract public void animateDown(float progress, float fingerPositionY);
+
+    public void setPosition(int row, int col) {
+        this.row = row;
+        this.col = col;
+    }
+
+    public void setSelectedBackground() {
+        setBackground(getResources().getDrawable(R.drawable.selected_field));
+    }
+
+    public void setDefaultBackground() {
+        setBackground(getResources().getDrawable(R.drawable.field));
+    }
+
+    private final long HIDING_DURATION = 200l;
+    private final long SHOWING_DURATION = 200l;
+    private final int MAX_ANIMATION_START_DELAY = 150;
+
+    public void hide() {
+        Random random = new Random();
+        long delay = random.nextInt(MAX_ANIMATION_START_DELAY);
+        animate().scaleXBy(-1.0f).setDuration(HIDING_DURATION).setStartDelay(delay).start();
+        animate().scaleYBy(-1.0f).setDuration(HIDING_DURATION).setStartDelay(delay).start();
+    }
+
+    public void show() {
+        Random random = new Random();
+        setScaleX(0);
+        setScaleY(0);
+        long delay = random.nextInt(MAX_ANIMATION_START_DELAY);
+        animate().scaleXBy(1.0f).setDuration(SHOWING_DURATION).setStartDelay(delay).start();
+        animate().scaleYBy(1.0f).setDuration(SHOWING_DURATION).setStartDelay(delay).start();
+    }
+
+    public void setRandomLetter() {
+        setLetter(LetterGenerator.getRandomLetter());
     }
 
 
-    @Override
-    public void animateUp(float progress, float fingerPositionY) {
-        if (row == 0) {
-            moveAndRotateUp(progress);
-        } else {
-            moveUp(fingerPositionY);
-        }
+    public void addListenerToSavePosition() {
+        addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                saveInitialPosition();
+            }
+        });
     }
 
-    @Override
-    public void animateDown(float progress, float fingerPositionY) {
-        if (row == gameAreaDimension - 1) {
-            moveAndRotateDown(progress);
-        } else {
-            moveDown(fingerPositionY);
-        }
+    // todo: Написать реализацию анимации возврата ячеек к исходным положениям для BorderField
+    protected final int RETURN_ANIMATION_DURATION = 200;
+
+    public abstract void animatePositionToInitial();
+
+    public abstract void resetPositionToInitialInstantly();
+
+    public abstract void animateRotationToInitial();
+
+    public abstract void resetRotationToInitialInstantly();
+
+    public void resetStartDelayToZero() {
+        animate().setStartDelay(0);
     }
 
-    private void moveAndRotateUp(float progress) {
-        float rotationAdjust = 1f - (float) Math.pow((1 - progress), 3);
-        float startRotation = 0f;
-        float rotationMultiplier = 0;
-
-        float offset;
-        float offsetMultiplier = 0;
-        float origin = 0;
-
-        origin = this.initialPositionY;
-        rotationMultiplier = 1f;
-        offsetMultiplier = -progress;
-
-        offset = origin + (getWidth() / 2) * offsetMultiplier;
-
-        animate().rotationX(startRotation + rotationMultiplier * 90f * rotationAdjust).setDuration(0).start();
-        animate().y(offset).setDuration(0).start();
+    public void setGameAreaOffset(int gameAreaOffsetX, int gameAreaOffsetY) {
+        this.gameAreaOffsetX = gameAreaOffsetX;
+        this.gameAreaOffsetY = gameAreaOffsetY;
     }
 
-    // todo: у некоторых методов нет start(), у некоторых есть. Хуета выходит
-    private void moveUp(float fingerPositionY) {
-        animate().y(fingerPositionY - distanceToFingerY).setDuration(0);
+    protected String getPositionAsString() {
+
+        return "(" + getPositionX() + "; " + getPositionY() + ")";
     }
-
-    private void moveAndRotateDown(float progress) {
-        float rotationAdjust = (1f - (float) Math.pow((1 - progress), 3));
-        float startRotation = 0f;
-        float rotationMultiplier = 0;
-
-        float offset;
-        float offsetMultiplier = 0;
-        float origin = 0;
-
-        startRotation *= -1f;
-        origin = this.initialPositionY;
-        rotationMultiplier = -1f;
-        offsetMultiplier = (progress);
-
-        offset = origin + (getWidth() / 2) * offsetMultiplier;
-
-        animate().rotationX(startRotation + rotationMultiplier * 90f * rotationAdjust).setDuration(0).start();
-        animate().y(offset).setDuration(0).start();
-    }
-
-    private void moveDown(float fingerPositionY) {
-        animate().y(fingerPositionY - distanceToFingerY).setDuration(0).start();
-    }
-
 }

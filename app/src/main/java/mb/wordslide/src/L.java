@@ -13,4 +13,8 @@ public class L {
     public static void l() {
         Log.d("mishka_log", "flag");
     }
+
+    public static void line() {
+        L.l("---------------------------------------------------------");
+    }
 }

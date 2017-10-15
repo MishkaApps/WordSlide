@@ -5,4 +5,5 @@ package mb.wordslide.src.Game;
  */
 
 public enum GameType {
+    TIME, MOVES;
 }

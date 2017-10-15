@@ -1,4 +1,4 @@
-package mb.wordslide.src.Game;
+package mb.wordslide.src.Game.GameArea;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,43 +7,37 @@ import android.widget.GridLayout;
 import com.google.common.collect.ImmutableTable;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import mb.wordslide.R;
+import mb.wordslide.src.Configurations;
 import mb.wordslide.src.Game.Field.Field;
-import mb.wordslide.src.Game.Field.FieldView1;
 
 /**
  * Created by mbolg on 26.07.2017.
  */
 public class StaticGameArea {
     protected GridLayout gameAreaGrid;
-    protected static final int FIELD_SIZE = 150;
-    private ImmutableTable<Integer, Integer, FieldView1> fields;
+    protected static final int FIELD_SIZE = Configurations.FIELDS_SIZE;
+    private ImmutableTable<Integer, Integer, Field> fields;
     protected int gameAreaDimension;
     protected LayoutInflater inflater;
     protected int gameAreaOffsetX, gameAreaOffsetY;
-    protected ArrayList<OnWordChangedListener> wordChangedListener;
-    protected ShiftListener shiftListener;
 
     public StaticGameArea(int areaDimension, LayoutInflater inflater, GridLayout gameAreaGrid) {
         this.gameAreaDimension = areaDimension;
         this.inflater = inflater;
         this.gameAreaGrid = gameAreaGrid;
-        wordChangedListener = new ArrayList<>();
 
-        ImmutableTable.Builder<Integer, Integer, FieldView1> fieldsBuilder = new ImmutableTable.Builder<>();
-        ArrayList<FieldView1> inflatedFields = inflateFields();
-        for (FieldView1 field : inflatedFields)
+        ImmutableTable.Builder<Integer, Integer, Field> fieldsBuilder = new ImmutableTable.Builder<>();
+        ArrayList<Field> inflatedFields = inflateFields();
+        for (Field field : inflatedFields)
             fieldsBuilder.put(field.getRow(), field.getCol(), field);
         this.fields = fieldsBuilder.build();
 
-
-        for (FieldView1 field : getFieldsArrayList())
+        for (Field field : getFieldsArrayList())
             gameAreaGrid.addView(field);
         saveInitialFieldsPositions();
         saveGameAreaOffset();
-        fillAreaWithLetters();
     }
 
     private void saveGameAreaOffset() {
@@ -54,13 +48,19 @@ public class StaticGameArea {
                 gameAreaGrid.getLocationOnScreen(offset);
                 gameAreaOffsetX = offset[0];
                 gameAreaOffsetY = offset[1];
+                setGameAreaOffsetForFields();
             }
         });
     }
 
-    private ArrayList<FieldView1> inflateFields() {
-        ArrayList<FieldView1> fields = new ArrayList<>();
-        FieldView1 tempFieldView;
+    private void setGameAreaOffsetForFields() {
+        for(Field field: getFieldsArrayList())
+            field.setGameAreaOffset(gameAreaOffsetX, gameAreaOffsetY);
+    }
+
+    private ArrayList<Field> inflateFields() {
+        ArrayList<Field> fields = new ArrayList<>();
+        Field tempFieldView;
         for (int row = 0; row < gameAreaDimension; ++row)
             for (int col = 0; col < gameAreaDimension; ++col) {
                 tempFieldView = inflateField(row, col);
@@ -71,10 +71,10 @@ public class StaticGameArea {
         return fields;
     }
 
-    private FieldView1 inflateField(int row, int col) {
+    private Field inflateField(int row, int col) {
         GridLayout.LayoutParams layoutParams;
-        FieldView1 tempFieldView;
-        tempFieldView = (FieldView1) inflater.inflate(R.layout.field_view_template, null, false);
+        Field tempFieldView;
+        tempFieldView = (Field) inflater.inflate(R.layout.field_view_template, null, false);
         layoutParams = new GridLayout.LayoutParams();
         layoutParams.rowSpec = GridLayout.spec(row);
         layoutParams.columnSpec = GridLayout.spec(col);
@@ -87,25 +87,14 @@ public class StaticGameArea {
 
 
     private void saveInitialFieldsPositions() {
-        for (FieldView1 field : getFieldsArrayList()) {
+        for (Field field : getFieldsArrayList()) {
             field.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                 @Override
                 public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                    ((FieldView1) v).saveInitialPosition();
+                    ((Field) v).saveInitialPosition();
                 }
             });
         }
-    }
-
-    private void fillAreaWithLetters() {
-
-        for (FieldView1 field : fields.values()) {
-            field.setLetter(getRandomLetter());
-        }
-    }
-
-    private char getRandomLetter(){
-        return (char) (1040 + (new Random()).nextInt(32));
     }
 
     protected void shiftRowLeft(int row) {
@@ -140,19 +129,8 @@ public class StaticGameArea {
         fields.get(0, col).setLetter(tempChar);
     }
 
-    public ArrayList<FieldView1> getFieldsArrayList() {
+    public ArrayList<Field> getFieldsArrayList() {
         return new ArrayList<>(fields.values());
     }
-    public void addWordUpdatedListener(OnWordChangedListener wordUpdatedListener) {
-        this.wordChangedListener.add(wordUpdatedListener);
-    }
 
-
-    protected void setNewLetter(FieldView1 field) {
-        field.setLetter(getRandomLetter());
-    }
-
-    public void setOnShiftListener(ShiftListener shiftListener){
-        this.shiftListener = shiftListener;
-    }
 }

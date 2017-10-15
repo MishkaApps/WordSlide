@@ -24,19 +24,35 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:layout_gravity="center"
-                android:textSize="@dimen/letter_size"/>
-            <Space
+                android:textSize="@dimen/letter_size" />
+
+            <include layout="@layout/game_progress_bar"/>
+
+            <FrameLayout
+                android:id="@+id/pause_button_container"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"/>
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/pause"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="right"
+                    android:layout_marginRight="20dp"
+                    android:background="@drawable/field"
+                    android:text="|  |"
+                    android:textStyle="bold" />
+            </FrameLayout>
         </LinearLayout>
 
         <fragment
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:id="@+id/display"
             android:name="mb.wordslide.src.Game.DisplayFragment"
-            android:id="@+id/display"/>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
         <fragment
             android:id="@+id/game_area_fragment"
@@ -49,16 +65,33 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
+
             <Button
+                android:id="@+id/ok"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:id="@+id/ok"
                 android:layout_gravity="center"
-                android:gravity="center"
                 android:background="@drawable/ok_button"
-                android:text="OK"/>
+                android:gravity="center"
+                android:text="OK" />
         </FrameLayout>
-
     </LinearLayout>
+
+
+    <FrameLayout
+        android:id="@+id/game_area_hider"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/blured"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/button_resume"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/capsule"
+            android:text="Resume" />
+    </FrameLayout>
 
 </RelativeLayout>

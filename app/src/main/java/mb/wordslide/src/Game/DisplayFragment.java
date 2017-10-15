@@ -1,6 +1,7 @@
 package mb.wordslide.src.Game;
 
 
+import android.animation.Animator;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -10,6 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import mb.wordslide.R;
+import mb.wordslide.src.Vibrator;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -31,6 +33,7 @@ public class DisplayFragment extends Fragment implements OnWordChangedListener {
                 onClearWordClick();
             }
         });
+        hideClearButton();
         return fragment;
     }
 
@@ -71,5 +74,75 @@ public class DisplayFragment extends Fragment implements OnWordChangedListener {
         onClearWordListener.notifyWordUsed();
         clearDisplay();
         hideClearButton();
+    }
+
+    public void notifyUserWordIncorrect() {
+        shakeDisplay();
+        vibrate();
+    }
+
+    // Пиздос костыль, но работает охуенно!!!
+    private final long ANIMATION_PART_DURATION = 50;
+    private boolean isShaking;
+
+    private void shakeDisplay() {
+        if(isShaking)
+            return;
+        Shaker shaker = new Shaker();
+        display.animate().xBy(50).setDuration(ANIMATION_PART_DURATION).setListener(shaker).start();
+    }
+
+    private class Shaker implements Animator.AnimatorListener {
+        private int count;
+
+        public Shaker() {
+            count = 0;
+        }
+
+        @Override
+        public void onAnimationStart(Animator animation) {
+            isShaking = true;
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            ++count;
+            switch (count) {
+                case 1:
+                    display.animate().xBy(-100).setDuration(ANIMATION_PART_DURATION).setListener(this).start();
+                    break;
+                case 2:
+                    display.animate().xBy(80).setDuration(ANIMATION_PART_DURATION).setListener(this).start();
+                    break;
+                case 3:
+                    display.animate().xBy(-60).setDuration(ANIMATION_PART_DURATION).setListener(this).start();
+                    break;
+                case 4:
+                    display.animate().xBy(40).setDuration(ANIMATION_PART_DURATION).setListener(this).start();
+                    break;
+                case 5:
+                    display.animate().xBy(-20).setDuration(ANIMATION_PART_DURATION).setListener(this).start();
+                    break;
+                case 6:
+                    display.animate().xBy(10).setDuration(ANIMATION_PART_DURATION).setListener(this).start();
+                    break;
+                case 7:
+                    isShaking = false;
+            }
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+    }
+
+    private void vibrate() {
+        (new Vibrator(getActivity())).vibrate();
     }
 }

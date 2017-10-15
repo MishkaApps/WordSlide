@@ -1,4 +1,4 @@
-package mb.wordslide.src.Game;
+package mb.wordslide.src.Game.GameArea;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -9,178 +9,313 @@ import android.widget.GridLayout;
 import java.util.ArrayList;
 
 import mb.wordslide.R;
+import mb.wordslide.src.Game.Field.GameField;
+import mb.wordslide.src.Game.FieldAnimationListener;
 import mb.wordslide.src.Game.Field.BorderField;
-import mb.wordslide.src.Game.Field.FieldView1;
-import mb.wordslide.src.Vibrator;
+import mb.wordslide.src.Game.Field.Field;
+import mb.wordslide.src.Game.FingerPosition;
+import mb.wordslide.src.Game.GameControl.ShiftListener;
 
 /**
  * Created by mbolg on 26.07.2017.
  */
-public class AnimatedGameArea extends StaticGameArea implements View.OnTouchListener, OnClearWordListener {
+public class AnimatedGameArea extends ClickableGameArea implements View.OnTouchListener {
     private FingerPosition currentFingerPosition;
-    private FingerPosition fingerDownPosition;
-    private boolean inSwipe;
-    private SwipeDirection swipeDirection;
-    private ArrayList<FieldView1> activeFields;
-    private int activeRow, activeCol;
-    private BorderField borderField;
-    private FieldView1 touchedField;
-    private Word word;
+    private FingerPosition originFingerPosition;
+    private Direction swipeDirection;
+    private ArrayList<Field> activeFields;
+    private int activeFieldsIndex;
+    private BorderField startBorderField, endBorderField;
+    private ShiftListener shiftListener;
+
     private boolean fingerDownImitated;
-    private Vibrator vibrator;
+    private boolean inSwipe;
+    private boolean isSwipeAxisDetermined;
+    private boolean isActiveFieldsSet;
+    private boolean isFingerActuallyDown;
 
     public AnimatedGameArea(GridLayout gameAreaGrid,
                             LayoutInflater inflater, Context context) {
-        super(6, inflater, gameAreaGrid);
-
-        swipeDirection = new SwipeDirection();
-        activeFields = new ArrayList<>();
-        word = new Word();
-        vibrator = new Vibrator(context);
-        setOnTouchListenersForFieldViews();
+        super(6, inflater, gameAreaGrid, context);
+        setFieldsTouchListener();
+        currentFingerPosition = new FingerPosition();
+        previousFingerPosition = new FingerPosition();
+        originFingerPosition = new FingerPosition();
+        swipeDirection = Direction.NONE;
+        gameAreaGrid.setOnTouchListener(this);
     }
 
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        int motionEvent = event.getAction();
 
-    private void setOnTouchListenersForFieldViews() {
-        for (FieldView1 field : getFieldsArrayList())
-            field.setOnTouchListener(this);
-    }
+        if (motionEvent != MotionEvent.ACTION_UP)
+            if (isDistanceBetweenCurrentAndPreviousEventsLiesInAllowableRange(event))
+                return true;
 
-    public void onFingerDown() {
-        saveFingerDownPosition();
-    }
+        if (motionEvent == MotionEvent.ACTION_MOVE)
+            if (isUserInputWord())
+                return true;
 
-    private void saveFingerDownPosition() {
-        fingerDownPosition = currentFingerPosition.copy();
-    }
+        saveTouchedViewIfItsField(v);
+        setFingerPosition(event.getRawX(), event.getRawY());
 
-    public void onFingerUp() {
-        if (!isFingerGetOutOfRange() && !fingerDownImitated)
-            onFieldClick();
-
-        resetGameAreaState();
-    }
-
-    private void onFieldClick() {
-        word.add(touchedField);
-        updateSelectedFieldBackground();
-        notifyWordChanged();
-    }
-
-    private void notifyWordChanged() {
-        for (OnWordChangedListener onWordChangedListener : wordChangedListener)
-            onWordChangedListener.wordChanged(word);
-    }
-
-    private void updateSelectedFieldBackground() {
-        for (FieldView1 field : getFieldsArrayList()) {
-            if (word.contains(field))
-                field.setSelectedBackground();
-            else field.setDefaultBackground();
+        switch (motionEvent) {
+            case MotionEvent.ACTION_DOWN:
+                onFingerDown();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                onFingerMove();
+                break;
+            case MotionEvent.ACTION_UP:
+                onFingerUp();
+                break;
         }
+
+        return true;
     }
 
-    public void onFingerMove() {
+    private void onFingerDown() {
+        fingerDownImitated = false;
+        inSwipe = false;
+        swipeDirection = Direction.NONE;
+        isFingerActuallyDown = true;
+        clearActiveFields();
+        isSwipeAxisDetermined = false;
+        saveCurrentFingerPositionAsOriginPosition();
+    }
+
+    private void imitateFingerDown() {
+        fingerDownImitated = true;
+        saveCurrentFingerPositionAsOriginPosition();
+    }
+
+    private void onFingerMove() {
         setSwipeDirection();
+
         if (!inSwipe)
             if (isFingerGetOutOfRange()) {
-                setActiveFields();
-                setActiveRowOrCol();
+                if (!isActiveFieldsSet) {
+                    setActiveFields();
+                }
+                setActiveFieldsIndex();
                 setDistancesToFingerForActiveFields();
-                createBorderField();
+                prepareBorderFields();
                 inSwipe = true;
+                isSwipeAxisDetermined = true;
             } else return;
 
+        previousFingerPosition.setPosition(currentFingerPosition.getX(), currentFingerPosition.getY());
         continueSwipe();
     }
 
-    private void createBorderField() {
-        int borderFieldRow = getBorderFieldRow();
-        int borderFieldCol = getBorderFieldCol();
-        inflateBorderField(borderFieldRow, borderFieldCol);
-        borderField.setPosition(borderFieldRow, borderFieldCol);
-        borderField.setLetter(getBorderFieldLetter());
-        saveInitialBorderFieldPosition();
-//        borderField.setStartPositionBeforeAnimateLeft();    todo: Эта хуета вообще что то делает?
-        borderField.setGameAreaDimension(gameAreaDimension);
-        activeFields.add(borderField);
-        gameAreaGrid.addView(borderField);
+    private void prepareBorderFields() {
+        addStartBorderField();
+        addEndBorderField();
+        startBorderField.setGameAreaOffset(gameAreaOffsetX, gameAreaOffsetY);
+        endBorderField.setGameAreaOffset(gameAreaOffsetX, gameAreaOffsetY);
+        startBorderField.setAnimationListener(new FieldAnimationListener(gameAreaGrid, startBorderField));
+        hideBorderFields();
     }
 
+    private void onFingerUp() {
+        isFingerActuallyDown = false;
+        if (!isFingerGetOutOfRange() && !fingerDownImitated)
+            if (touchedField != null)
+                onFieldClick();
+        returnActiveFieldsRotationToInitial();
+        returnActiveFieldsPositionToInitial();
+    }
+
+    private void saveTouchedViewIfItsField(View v) {
+        if (v.getClass() == GameField.class)
+            touchedField = (Field) v;
+    }
+
+    private boolean isDistanceBetweenCurrentAndPreviousEventsLiesInAllowableRange(MotionEvent event) {
+        final float MAX_ALLOWED_TOUCH_OFFSET = 100;
+        if (isFingerActuallyDown)
+            return getDistanceBetweenCurrentAndPreviousTouches(event.getRawX(), event.getRawY()) > MAX_ALLOWED_TOUCH_OFFSET;
+        return false;
+    }
+
+
+    private void setFieldsTouchListener() {
+        for (Field field : getFieldsArrayList())
+            field.setOnTouchListener(this);
+    }
+
+
+    private void clearActiveFields() {
+        activeFields = new ArrayList<>();
+        isActiveFieldsSet = false;
+    }
+
+    private void saveCurrentFingerPositionAsOriginPosition() {
+        originFingerPosition.setPosition(currentFingerPosition.getX(), currentFingerPosition.getY());
+    }
+
+    private FingerPosition previousFingerPosition;
+
+
+    private void hideBorderFields() {
+        startBorderField.setVisibility(View.INVISIBLE);
+        endBorderField.setVisibility(View.INVISIBLE);
+    }
+
+
+    private void addStartBorderField() {
+        int borderFieldRow = getStartBorderFieldRow();
+        int borderFieldCol = getStartBorderFieldCol();
+        startBorderField = inflateBorderField(borderFieldRow, borderFieldCol);
+        startBorderField.setPosition(borderFieldRow, borderFieldCol);
+        startBorderField.setLetter(getBorderFieldLetter());
+        startBorderField.addListenerToSavePosition();
+        startBorderField.setGameAreaDimension(gameAreaDimension);
+        activeFields.add(startBorderField);
+        gameAreaGrid.addView(startBorderField);
+    }
+
+    private void addEndBorderField() {
+        int borderFieldRow = getEndBorderFieldRow();
+        int borderFieldCol = getEndBorderFieldCol();
+        endBorderField = inflateBorderField(borderFieldRow, borderFieldCol);
+        endBorderField.setPosition(borderFieldRow, borderFieldCol);
+        endBorderField.setLetter(getBorderFieldLetter());
+        endBorderField.addListenerToSavePosition();
+        endBorderField.setGameAreaDimension(gameAreaDimension);
+        activeFields.add(endBorderField);
+        gameAreaGrid.addView(endBorderField);
+    }
+
+    private int getStartBorderFieldRow() {
+        if (swipeDirection.isHorizontal())
+            return activeFieldsIndex;
+        else
+            return 0;
+    }
+
+    private int getStartBorderFieldCol() {
+        if (swipeDirection.isHorizontal())
+            return 0;
+        else return activeFieldsIndex;
+    }
+
+    private int getEndBorderFieldRow() {
+        if (swipeDirection.isHorizontal())
+            return activeFieldsIndex;
+        else
+            return gameAreaDimension - 1;
+    }
+
+    private int getEndBorderFieldCol() {
+        if (swipeDirection.isHorizontal())
+            return gameAreaDimension - 1;
+        else
+            return activeFieldsIndex;
+    }
+
+
+    private void setSwipeDirection() {
+        Direction newDirection;
+
+        if (isFingerXOffsetGreaterThanYOffset()) {
+            if (currentFingerPosition.getX() < previousFingerPosition.getX())
+                newDirection = Direction.LEFT;
+            else newDirection = Direction.RIGHT;
+        } else {
+            if (currentFingerPosition.getY() < previousFingerPosition.getY())
+                newDirection = Direction.UP;
+            else newDirection = Direction.DOWN;
+        }
+
+        if (swipeDirection.isSameAxis(newDirection) || swipeDirection.isNone())
+            swipeDirection = newDirection;
+        else if (!isSwipeAxisDetermined)
+            swipeDirection = newDirection;
+    }
+
+    private boolean isFingerGetOutOfRange() {
+        final float SWIPE_DETECT_RADIUS = 5f;
+        return (Math.sqrt(Math.abs(currentFingerPosition.getX() - originFingerPosition.getX()) + Math.abs(currentFingerPosition.getY() - originFingerPosition.getY())) > SWIPE_DETECT_RADIUS);
+    }
+
+
     private char getBorderFieldLetter() {
-        if (swipeDirection.direction == SwipeDirection.Direction.LEFT)
+        if (swipeDirection == Direction.LEFT)
             return activeFields.get(0).getLetter();
-        else if (swipeDirection.direction == SwipeDirection.Direction.RIGHT)
+        else if (swipeDirection == Direction.RIGHT)
             return activeFields.get(gameAreaDimension - 1).getLetter();
-        else if (swipeDirection.direction == SwipeDirection.Direction.UP)
+        else if (swipeDirection == Direction.UP)
             return activeFields.get(0).getLetter();
-        else if (swipeDirection.direction == SwipeDirection.Direction.DOWN)
+        else if (swipeDirection == Direction.DOWN)
             return activeFields.get(gameAreaDimension - 1).getLetter();
         return 0;
     }
 
-    private void saveInitialBorderFieldPosition() {
-        borderField.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-            @Override
-            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                ((FieldView1) v).saveInitialPosition();
-            }
-        });
-    }
 
-    private void inflateBorderField(int row, int col) {
+    //todo Не реагировать на касания, если анимация возврата не заверншена
+
+    private BorderField inflateBorderField(int row, int col) {
         GridLayout.LayoutParams layoutParams;
-        borderField = (BorderField) inflater.inflate(R.layout.border_field_view_template, null, false);
+        BorderField inflatedField = (BorderField) inflater.inflate(R.layout.border_field_view_template, null, false);
         layoutParams = new GridLayout.LayoutParams();
         layoutParams.rowSpec = GridLayout.spec(row);
         layoutParams.columnSpec = GridLayout.spec(col);
         layoutParams.setMargins(10, 10, 10, 10);
-        layoutParams.height = 150;
-        layoutParams.width = 150;
-        borderField.setLayoutParams(layoutParams);
+        layoutParams.height = FIELD_SIZE;
+        layoutParams.width = FIELD_SIZE;
+        inflatedField.setLayoutParams(layoutParams);
+        return inflatedField;
     }
 
     private void resetGameAreaState() {
         fingerDownImitated = false;
         inSwipe = false;
-        swipeDirection.direction = SwipeDirection.Direction.NONE;
-        resetActiveFieldsToItsInitialState();
         removeBorderFieldFromGameArea();
+        resetActiveFieldsRotationInstantly();
+        resetActiveFieldsPositionInstantly();
     }
 
-    private void removeBorderFieldFromGameArea() {
-        gameAreaGrid.removeView(borderField);
-    }
-
-    private void setDistancesToFingerForActiveFields() {
-        for (FieldView1 field : activeFields)
-            field.setDistanceToFinger(currentFingerPosition.x - field.getPositionX(), currentFingerPosition.y - field.getPositionY());
-    }
-
-    private ArrayList<FieldView1> getAllFieldViewsList() {
-        ArrayList<FieldView1> tempArrayList = new ArrayList<>();
-        for (FieldView1 field : getFieldsArrayList())
-            tempArrayList.add(field);
-        return tempArrayList;
-    }
-
-
-    private void setSwipeDirection() {
-        if (Math.abs(currentFingerPosition.x - fingerDownPosition.x) >= Math.abs(currentFingerPosition.y - fingerDownPosition.y)) {
-            if (currentFingerPosition.x < fingerDownPosition.x)
-                swipeDirection.direction = SwipeDirection.Direction.LEFT;
-            else swipeDirection.direction = SwipeDirection.Direction.RIGHT;
-        } else {
-            if (currentFingerPosition.y < fingerDownPosition.y)
-                swipeDirection.direction = SwipeDirection.Direction.UP;
-            else swipeDirection.direction = SwipeDirection.Direction.DOWN;
+    private void resetActiveFieldsRotationInstantly() {
+        for (Field field : activeFields) {
+            field.resetRotationToInitialInstantly();
         }
     }
 
-    private void setActiveFields() {
-        activeFields = new ArrayList<>();
+    private void resetActiveFieldsPositionInstantly() {
+        for (Field field : activeFields)
+            field.resetPositionToInitialInstantly();
+    }
 
-        for (FieldView1 fieldView : getAllFieldViewsList())
+    private void returnActiveFieldsRotationToInitial() {
+        for (Field field : activeFields) {
+            field.animateRotationToInitial();
+        }
+    }
+
+    private void returnActiveFieldsPositionToInitial() {
+        for (Field field : activeFields)
+            field.animatePositionToInitial();
+    }
+
+    private void removeBorderFieldFromGameArea() {
+        gameAreaGrid.removeView(startBorderField);
+        gameAreaGrid.removeView(endBorderField);
+    }
+
+    private void setDistancesToFingerForActiveFields() {
+        for (Field field : activeFields)
+            field.setDistanceToFinger(currentFingerPosition.getX() - field.getPositionX(), currentFingerPosition.getY() - field.getPositionY());
+    }
+
+
+    private boolean isFingerXOffsetGreaterThanYOffset() {
+        return Math.abs(currentFingerPosition.getX() - originFingerPosition.getX()) >= Math.abs(currentFingerPosition.getY() - originFingerPosition.getY());
+    }
+
+    private void setActiveFields() {
+        for (Field fieldView : getFieldsArrayList())
             if (swipeDirection.isHorizontal()) {
                 if (isFieldInRow(fieldView))
                     activeFields.add(fieldView);
@@ -188,61 +323,75 @@ public class AnimatedGameArea extends StaticGameArea implements View.OnTouchList
                 if (isFieldInCol(fieldView))
                     activeFields.add(fieldView);
             }
+
+        isActiveFieldsSet = true;
     }
 
-    private void setActiveRowOrCol() {
+    private boolean isFieldInRow(Field field) {
+        return originFingerPosition.getY() > field.getPositionY() && originFingerPosition.getY() < (field.getPositionY() + FIELD_SIZE);
+    }
+
+    private boolean isFieldInCol(Field field) {
+        return originFingerPosition.getX() > field.getPositionX() && originFingerPosition.getX() < (field.getPositionX() + FIELD_SIZE);
+    }
+
+    private void setActiveFieldsIndex() {
         if (swipeDirection.isHorizontal())
-            activeRow = activeFields.get(0).getRow();
+            activeFieldsIndex = activeFields.get(0).getRow();
         else
-            activeCol = activeFields.get(0).getCol();
+            activeFieldsIndex = activeFields.get(0).getCol();
     }
-
 
     private void continueSwipe() {
         float progress = 0;
         if (swipeDirection.isHorizontal()) {
-            if (swipeDirection.direction == SwipeDirection.Direction.LEFT)
+            if (swipeDirection == Direction.LEFT)
                 progress = calculateProgressWhileMovingLeft();
-            else if (swipeDirection.direction == SwipeDirection.Direction.RIGHT)
+            else if (swipeDirection == Direction.RIGHT)
                 progress = calculateProgressWhileMovingRight();
 
-            for (FieldView1 field : activeFields) {
-                float relativeFingerPositionX = currentFingerPosition.x - gameAreaOffsetX;
-                if (swipeDirection.direction == SwipeDirection.Direction.LEFT) {
+
+            for (Field field : activeFields) {
+                float relativeFingerPositionX = currentFingerPosition.getX();
+                if (swipeDirection == Direction.LEFT) {
+
                     field.animateLeft(progress, relativeFingerPositionX);
+
                     if (isActiveFieldsShiftedLeft()) {
-                        shiftRowLeft(activeRow);
+                        shiftRowLeft(activeFieldsIndex);
                         onShiftComplete();
                         break;
                     }
-                } else if (swipeDirection.direction == SwipeDirection.Direction.RIGHT) {
+                } else if (swipeDirection == Direction.RIGHT) {
+
                     field.animateRight(progress, relativeFingerPositionX);
+
                     if (isActiveFieldsShiftedRight()) {
-                        shiftRowRight(activeRow);
+                        shiftRowRight(activeFieldsIndex);
                         onShiftComplete();
                         break;
                     }
                 }
             }
         } else {
-            if (swipeDirection.direction == SwipeDirection.Direction.UP)
+            if (swipeDirection == Direction.UP)
                 progress = calculateProgressWhileMovingUp();
-            else if (swipeDirection.direction == SwipeDirection.Direction.DOWN)
+            else if (swipeDirection == Direction.DOWN)
                 progress = calculateProgressWhileMovingDown();
 
-            for (FieldView1 field : activeFields) {
-                float relativeFingerPositionY = currentFingerPosition.y - gameAreaOffsetY;
-                if (swipeDirection.direction == SwipeDirection.Direction.UP) {
+            for (Field field : activeFields) {
+                float relativeFingerPositionY = currentFingerPosition.getY();// - gameAreaOffsetY;
+                if (swipeDirection == Direction.UP) {
                     field.animateUp(progress, relativeFingerPositionY);
                     if (isActiveFieldsShiftedUp()) {
-                        shiftColUp(activeCol);
+                        shiftColUp(activeFieldsIndex);
                         onShiftComplete();
                         break;
                     }
-                } else if (swipeDirection.direction == SwipeDirection.Direction.DOWN) {
+                } else if (swipeDirection == Direction.DOWN) {
                     field.animateDown(progress, relativeFingerPositionY);
                     if (isActiveFieldsShiftedDown()) {
-                        shiftColDown(activeCol);
+                        shiftColDown(activeFieldsIndex);
                         onShiftComplete();
                         break;
                     }
@@ -252,11 +401,12 @@ public class AnimatedGameArea extends StaticGameArea implements View.OnTouchList
 
     }
 
-    private void onShiftComplete(){
+    private void onShiftComplete() {
         resetGameAreaState();
         imitateFingerDown();
         vibrate();
-        shiftListener.shifted();
+        if (shiftListener != null)
+            shiftListener.shifted();
     }
 
     private void vibrate() {
@@ -264,166 +414,117 @@ public class AnimatedGameArea extends StaticGameArea implements View.OnTouchList
     }
 
     private float calculateProgressWhileMovingLeft() {
-        FieldView1 testField1 = activeFields.get(1);
-        FieldView1 testField2 = activeFields.get(0);
-        float progress = 1f - Math.abs((testField1.getAbsolutePositionX() - testField2.getInitialPositionX()) / (testField1.getInitialPositionX() - testField2.getInitialPositionX()));
+        Field testField1 = activeFields.get(2);
+        Field testField2 = activeFields.get(1);
+        float progress = 1f - Math.abs((testField1.getPositionX() - testField2.getInitialPositionX()) / (testField1.getInitialPositionX() - testField2.getInitialPositionX()));
         return progress;
     }
 
     private float calculateProgressWhileMovingRight() {
-        FieldView1 testField1 = activeFields.get(0);
-        FieldView1 testField2 = activeFields.get(1);
-        float progress = 1f - Math.abs((testField1.getAbsolutePositionX() - testField2.getInitialPositionX()) / (testField1.getInitialPositionX() - testField2.getInitialPositionX()));
+        Field testField1 = activeFields.get(1);
+        Field testField2 = activeFields.get(2);
+        float progress = 1f - Math.abs((testField1.getPositionX() - testField2.getInitialPositionX()) / (testField1.getInitialPositionX() - testField2.getInitialPositionX()));
         return progress;
     }
 
     private float calculateProgressWhileMovingUp() {
-        FieldView1 testField1 = activeFields.get(1);
-        FieldView1 testField2 = activeFields.get(0);
-        float progress = 1f - Math.abs((testField1.getAbsolutePositionY() - testField2.getInitialPositionY()) / (testField1.getInitialPositionY() - testField2.getInitialPositionY()));
+        Field testField1 = activeFields.get(2);
+        Field testField2 = activeFields.get(1);
+        float progress = 1f - Math.abs((testField1.getPositionY() - testField2.getInitialPositionY()) / (testField1.getInitialPositionY() - testField2.getInitialPositionY()));
         return progress;
     }
 
     private float calculateProgressWhileMovingDown() {
-        FieldView1 testField1 = activeFields.get(0);
-        FieldView1 testField2 = activeFields.get(1);
-        float progress = 1f - Math.abs((testField1.getAbsolutePositionY() - testField2.getInitialPositionY()) / (testField1.getInitialPositionY() - testField2.getInitialPositionY()));
+        Field testField1 = activeFields.get(1);
+        Field testField2 = activeFields.get(2);
+        float progress = 1f - Math.abs((testField1.getPositionY() - testField2.getInitialPositionY()) / (testField1.getInitialPositionY() - testField2.getInitialPositionY()));
         return progress;
     }
-//    public void updateFields() {
-//        for (FieldView1 fieldView : getAllFieldViewsList())
-//            fieldView.setText(fieldView.getLetterAsString());
-//    }
 
-    private void imitateFingerDown() {
-        fingerDownImitated = true;
-        onFingerDown();
-    }
-
-    private void resetActiveFieldsToItsInitialState() {
-        for (FieldView1 field : activeFields) {
-            field.resetPositionToInitial();
-            field.resetRotationToInitial();
-        }
-    }
 
     private boolean isActiveFieldsShiftedLeft() {
-        FieldView1 testField1 = activeFields.get(1);
-        FieldView1 testField2 = activeFields.get(0);
-        return testField1.getAbsolutePositionX() < testField2.getInitialPositionX();
+        Field testField1 = activeFields.get(2);
+        Field testField2 = activeFields.get(1);
+        return testField1.getPositionX() < testField2.getInitialPositionX();
     }
 
     private boolean isActiveFieldsShiftedRight() {
-        FieldView1 testField1 = activeFields.get(0);
-        FieldView1 testField2 = activeFields.get(1);
-        return testField1.getAbsolutePositionX() > testField2.getInitialPositionX();
+        Field testField1 = activeFields.get(1);
+        Field testField2 = activeFields.get(2);
+        return testField1.getPositionX() > testField2.getInitialPositionX();
     }
 
     private boolean isActiveFieldsShiftedUp() {
-        FieldView1 testField1 = activeFields.get(1);
-        FieldView1 testField2 = activeFields.get(0);
-        return testField1.getAbsolutePositionY() < testField2.getInitialPositionY();
+        Field testField1 = activeFields.get(2);
+        Field testField2 = activeFields.get(1);
+        return testField1.getPositionY() < testField2.getInitialPositionY();
     }
 
     private boolean isActiveFieldsShiftedDown() {
-        FieldView1 testField1 = activeFields.get(0);
-        FieldView1 testField2 = activeFields.get(1);
-        return testField1.getAbsolutePositionY() > testField2.getInitialPositionY();
-    }
-
-    private boolean isFieldInRow(FieldView1 field) {
-        return fingerDownPosition.y > field.getPositionY() && fingerDownPosition.y < (field.getPositionY() + FIELD_SIZE);
-    }
-
-    private boolean isFieldInCol(FieldView1 field) {
-        return fingerDownPosition.x > field.getPositionX() && fingerDownPosition.x < (field.getPositionX() + FIELD_SIZE);
+        Field testField1 = activeFields.get(1);
+        Field testField2 = activeFields.get(2);
+        return testField1.getPositionY() > testField2.getInitialPositionY();
     }
 
 
-    private boolean isFingerGetOutOfRange() {
-        final float SWIPE_DETECT_RADIUS = 5f;
-        return (Math.sqrt(Math.abs(currentFingerPosition.x - fingerDownPosition.x) + Math.abs(currentFingerPosition.y - fingerDownPosition.y)) > SWIPE_DETECT_RADIUS);
-
+    private float getDistanceBetweenCurrentAndPreviousTouches(float x, float y) {
+        float res = (float) Math.sqrt(Math.pow(currentFingerPosition.getX() - x, 2)
+                + Math.pow(currentFingerPosition.getY() - y, 2));
+        return res;
     }
 
-    public void setFingerPosition(FingerPosition fingerPosition) {
-        this.currentFingerPosition = fingerPosition;
+
+    private void setFingerPosition(float x, float y) {
+        currentFingerPosition.setPosition(x, y);
     }
 
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        touchedField = (FieldView1) v;
-        this.setFingerPosition(new FingerPosition(event.getRawX(), event.getRawY()));
-        int motionEvent = event.getAction();
-        if (motionEvent == MotionEvent.ACTION_DOWN) {
-            this.onFingerDown();
-        } else if (motionEvent == MotionEvent.ACTION_MOVE) {
-            if (!isUserSelectWord())
-                this.onFingerMove();
-        } else if (motionEvent == MotionEvent.ACTION_UP) {
-            this.onFingerUp();
-        }
-        return true;
-    }
-
-    private boolean isUserSelectWord() {
+    private boolean isUserInputWord() {
         return word.size() > 0;
     }
 
-    public int getBorderFieldRow() {
-        if (swipeDirection.isHorizontal()) {
-            return this.activeRow;
-        } else if (swipeDirection.direction == SwipeDirection.Direction.UP) {
-            return gameAreaDimension - 1;
-        } else if (swipeDirection.direction == SwipeDirection.Direction.DOWN) {
-            return 0;
-        }
-        return 0;
+
+    public void setShiftListener(ShiftListener shiftListener) {
+        this.shiftListener = shiftListener;
     }
 
-    public int getBorderFieldCol() {
-        if (!swipeDirection.isHorizontal()) {
-            return this.activeCol;
-        } else if (swipeDirection.direction == SwipeDirection.Direction.LEFT) {
-            return gameAreaDimension - 1;
-        } else if (swipeDirection.direction == SwipeDirection.Direction.RIGHT) {
-            return 0;
-        }
-        return 0;
-    }
-
-
-    @Override
-    public void notifyWordCleared() {
-        word.clear();
-        updateSelectedFieldBackground();
-        notifyWordChanged();
-    }
-
-    @Override
-    public void notifyWordUsed() {
-        setClearedFields();
-        word.clear();
-        updateSelectedFieldBackground();
-        notifyWordChanged();
-
-    }
-
-
-    private void setClearedFields() {
-        for (FieldView1 field : word) {
-            hideField(field);
-            setNewLetter(field);
-            showField(field);
+    public void hideAllFields() {
+        vibrate();
+        for (Field field : getFieldsArrayList()) {
+            field.hide();
         }
     }
 
-    private void hideField(FieldView1 field) {
-        field.hide();
+    public void showAllFields() {
+        vibrate();
+        for (Field field : getFieldsArrayList()) {
+            field.show();
+        }
     }
 
-    private void showField(FieldView1 field) {
-        field.show();
+    public enum Direction {
+        LEFT, RIGHT, UP, DOWN, NONE;
+
+        public boolean isHorizontal() {
+            if (this == LEFT || this == RIGHT)
+                return true;
+            else return false;
+        }
+
+        public boolean isSameAxis(Direction direction) {
+            if (this == LEFT || this == RIGHT)
+                if (direction == LEFT || direction == RIGHT)
+                    return true;
+                else return false;
+            if (this == UP || this == DOWN)
+                if (direction == UP || direction == DOWN)
+                    return true;
+                else return false;
+            return false;
+        }
+
+        public boolean isNone() {
+            return (this == NONE);
+        }
     }
 
 }
