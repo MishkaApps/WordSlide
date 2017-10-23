@@ -15,6 +15,7 @@ import mb.wordslide.src.Game.Field.BorderField;
 import mb.wordslide.src.Game.Field.Field;
 import mb.wordslide.src.Game.FingerPosition;
 import mb.wordslide.src.Game.GameControl.ShiftListener;
+import mb.wordslide.src.Game.NoActiveFieldsSetException;
 
 /**
  * Created by mbolg on 26.07.2017.
@@ -96,7 +97,12 @@ public class AnimatedGameArea extends ClickableGameArea implements View.OnTouchL
         if (!inSwipe)
             if (isFingerGetOutOfRange()) {
                 if (!isActiveFieldsSet) {
-                    setActiveFields();
+                   try {
+                       setActiveFields();
+                   } catch (NoActiveFieldsSetException e){
+                       onFingerUp(); // todo:  Норм не норм?
+                       return;
+                   }
                 }
                 setActiveFieldsIndex();
                 setDistancesToFingerForActiveFields();
@@ -314,7 +320,7 @@ public class AnimatedGameArea extends ClickableGameArea implements View.OnTouchL
         return Math.abs(currentFingerPosition.getX() - originFingerPosition.getX()) >= Math.abs(currentFingerPosition.getY() - originFingerPosition.getY());
     }
 
-    private void setActiveFields() {
+    private void setActiveFields() throws NoActiveFieldsSetException {
         for (Field fieldView : getFieldsArrayList())
             if (swipeDirection.isHorizontal()) {
                 if (isFieldInRow(fieldView))
@@ -323,6 +329,9 @@ public class AnimatedGameArea extends ClickableGameArea implements View.OnTouchL
                 if (isFieldInCol(fieldView))
                     activeFields.add(fieldView);
             }
+
+        if (activeFields.size() == 0)
+            throw new NoActiveFieldsSetException();
 
         isActiveFieldsSet = true;
     }

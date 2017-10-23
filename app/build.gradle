@@ -21,13 +21,15 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    // https://mvnrepository.com/artifact/com.google.guava/guava
     compile group: 'com.google.guava', name: 'guava', version: '22.0-android'
 
+
+    compile project(':BaseGameUtils')
     compile 'com.google.android.gms:play-services-games:11.4.0'
+    compile 'com.google.android.gms:play-services-auth:11.4.0'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support:support-v4:25.3.1'
-    compile 'org.jetbrains:annotations-java5:15.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
 }
+apply plugin: 'com.google.gms.google-services'

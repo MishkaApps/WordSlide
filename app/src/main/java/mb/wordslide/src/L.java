@@ -7,7 +7,7 @@ import android.util.Log;
  */
 public class L {
     public static void l(String text){
-        Log.d("mishka log", text);
+        Log.d("mishka_log", text);
     }
 
     public static void l() {

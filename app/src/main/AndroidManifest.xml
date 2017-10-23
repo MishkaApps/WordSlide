@@ -3,6 +3,7 @@
     package="mb.wordslide">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -10,16 +11,23 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/StartActivityStyle">
-        <activity android:name=".src.Activities.StartActivity">
+        <meta-data
+            android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/app_id" />
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <activity android:name=".src.StartActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".src.Game.TimeGameActivity"></activity>
+        <activity android:name=".src.Game.TimeGameActivity" />
         <activity android:name=".src.Game.MoveGameActivity" />
-        <activity android:name=".src.Activities.TestActivity"></activity>
+        <activity android:name=".src.LeaderboardActivity"></activity>
     </application>
 
 </manifest>

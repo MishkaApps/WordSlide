@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@android:color/black"
     android:orientation="vertical"
-    tools:context="mb.wordslide.src.Activities.StartActivity">
+    tools:context="mb.wordslide.src.StartActivity">
 
 
     <LinearLayout
@@ -40,7 +40,7 @@
         android:layout_height="200dp" />
 
     <Button
-        android:id="@+id/moves_game"
+        android:id="@+id/btn_moves_game"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -52,7 +52,7 @@
         android:layout_height="20dp" />
 
     <Button
-        android:id="@+id/time_game"
+        android:id="@+id/btn_time_game"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -64,10 +64,11 @@
         android:layout_height="20dp" />
 
     <Button
+        android:id="@+id/btn_leaderboard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:background="@drawable/capsule"
-        android:text="Settings" />
+        android:text="Leaderboard" />
 
 </LinearLayout>
