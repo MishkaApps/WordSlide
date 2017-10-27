@@ -1,7 +1,6 @@
 package mb.wordslide.src;
 
-import mb.wordslide.src.Game.MoveGameActivity;
-import mb.wordslide.src.Game.TimeGameActivity;
+import mb.wordslide.src.Game.ConcreteGameActivities.TimeGameActivity;
 
 /**
  * Created by mbolg on 21.09.2017.
@@ -19,4 +18,6 @@ public class Configurations {
 //    public static final Class<?> GAME_CLASS = MoveGameActivity.class;
     public static final boolean CHECK_WORDS = true;
     public static final int FIELDS_SIZE = 150;
+    public static final int GAME_AREA_DIMENSION = 6;
+
 }

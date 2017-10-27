@@ -9,6 +9,7 @@ import android.widget.Toast;
 import mb.wordslide.R;
 import mb.wordslide.src.Configurations;
 import mb.wordslide.src.Game.GameArea.AnimatedGameArea;
+import mb.wordslide.src.Game.GameBlueprint.GameBlueprint;
 import mb.wordslide.src.Game.GameControl.GameController;
 import mb.wordslide.src.Game.GameControl.GameOverListener;
 import mb.wordslide.src.Game.GameControl.GameProgressBar;
@@ -18,11 +19,12 @@ import mb.wordslide.src.Vocabulary.Vocabulary;
 public abstract class GameActivity extends AppCompatActivity implements View.OnClickListener, OnWordChangedListener, GameOverListener {
     private DisplayFragment display;
     private Button btnOk;
-    private Score score;
+    private ScoreDisplay score;
     private Word word;
     private Vocabulary vocabulary;
-    protected AnimatedGameArea animatedGameArea;
+    protected AnimatedGameArea gameArea;
     protected GameController gameController;
+    protected GameBlueprint gameBlueprint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,34 +32,50 @@ public abstract class GameActivity extends AppCompatActivity implements View.OnC
         setContentView(R.layout.activity_game2);
 
         AnimatedGameAreaProvider gameAreaProvider = (AnimatedGameAreaProvider) getSupportFragmentManager().findFragmentById(R.id.game_area_fragment);
-        animatedGameArea = gameAreaProvider.getAnimatedGameArea();
+        gameArea = gameAreaProvider.getAnimatedGameArea();
 
         display = (DisplayFragment) getSupportFragmentManager().findFragmentById(R.id.display);
         btnOk = (Button) findViewById(R.id.ok);
         btnOk.setOnClickListener(this);
         hideOkButton();
 
-        score = (Score) findViewById(R.id.score);
+        score = (ScoreDisplay) findViewById(R.id.score);
 
         vocabulary = new Vocabulary(getResources());
 
         setGameAreaWordChangedListeners();
         setGameAreaAsWordClearListener();
 
+        tryRestoreGame();
+
         GameProgressBar gameProgressBar = (GameProgressBar)findViewById(R.id.game_controller);
         gameController = getConcreteGameOverController();
         gameProgressBar.setConcreteController(gameController);
+
     }
+
+    private void tryRestoreGame() {
+        if(GameBlueprint.isGameSaved(this)) {
+            gameBlueprint = GameBlueprint.retrieveSavedGame(this, getConcreteGameBlueprintClass());
+        } else {
+            gameBlueprint = getNewConcreteGameBlueprint();
+        }
+        gameArea.setGameBundle(gameBlueprint);
+        score.setScore(gameBlueprint.getScore());
+    }
+
+    protected abstract GameBlueprint getNewConcreteGameBlueprint();
+    protected abstract Class<? extends GameBlueprint> getConcreteGameBlueprintClass();
 
     protected abstract GameController getConcreteGameOverController();
 
     private void setGameAreaWordChangedListeners() {
-        animatedGameArea.addWordUpdatedListener(display);
-        animatedGameArea.addWordUpdatedListener(this);
+        gameArea.addWordUpdatedListener(display);
+        gameArea.addWordUpdatedListener(this);
     }
 
     private void setGameAreaAsWordClearListener() {
-        display.setOnClearWordListener(animatedGameArea);
+        display.setOnClearWordListener(gameArea);
     }
 
     @Override
@@ -76,7 +94,8 @@ public abstract class GameActivity extends AppCompatActivity implements View.OnC
             if(!checkWord())
                 throw new WordDoesNotExist();
 
-        score.addWord(word);
+        score.addScore(word.getScore());
+        gameBlueprint.addScore(word.getScore());
         gameController.addBonus(word.getCost());
         display.clearUsedWord();
     }
@@ -108,6 +127,6 @@ public abstract class GameActivity extends AppCompatActivity implements View.OnC
 
     @Override
     public void gameOver() {
-        Toast.makeText(this, "Game ends", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "GameBlueprint ends", Toast.LENGTH_SHORT).show();
     }
 }

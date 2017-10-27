@@ -1,4 +1,4 @@
-package mb.wordslide.src.Game;
+package mb.wordslide.src.Game.ConcreteGameActivities;
 
 import android.os.Bundle;
 import android.view.View;
@@ -7,6 +7,9 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 
 import mb.wordslide.R;
+import mb.wordslide.src.Game.GameActivity;
+import mb.wordslide.src.Game.GameBlueprint.GameBlueprint;
+import mb.wordslide.src.Game.GameBlueprint.TimeGameBlueprint;
 import mb.wordslide.src.Game.GameControl.GameController;
 import mb.wordslide.src.Game.GameControl.Timer;
 /**
@@ -43,6 +46,11 @@ public class TimeGameActivity extends GameActivity {
         });
     }
 
+    @Override
+    protected GameBlueprint getNewConcreteGameBlueprint() {
+        return new TimeGameBlueprint(this);
+    }
+
     private void pauseGame() {
         timer.pause();
         hideGameArea();
@@ -51,7 +59,7 @@ public class TimeGameActivity extends GameActivity {
 
     private void hideGameArea() {
         showGameAreaHider();
-        animatedGameArea.hideAllFields();
+        gameArea.hideAllFields();
     }
 
     private void resumeGame() {
@@ -62,7 +70,7 @@ public class TimeGameActivity extends GameActivity {
 
     private void showGameArea() {
         hideGameAreaHider();
-        animatedGameArea.showAllFields();
+        gameArea.showAllFields();
     }
 
     private void showGameAreaHider() {
@@ -75,8 +83,14 @@ public class TimeGameActivity extends GameActivity {
 
     @Override
     protected GameController getConcreteGameOverController() {
-        timer = new Timer();
+        timer = new Timer(gameBlueprint);
         return timer;
+    }
+
+
+    @Override
+    protected Class<? extends GameBlueprint> getConcreteGameBlueprintClass() {
+        return TimeGameBlueprint.class;
     }
 
 }

@@ -24,7 +24,7 @@ public class ClickableGameArea extends StaticGameArea implements OnClearWordList
     protected Field touchedField;
 
     public ClickableGameArea(int areaDimension, LayoutInflater inflater, GridLayout gameAreaGrid, Context context) {
-        super(areaDimension, inflater, gameAreaGrid);
+        super(areaDimension, inflater, gameAreaGrid, context);
         vibrator = new Vibrator(context);
         word = new Word();
         wordChangedListener = new ArrayList<>();
@@ -89,6 +89,7 @@ public class ClickableGameArea extends StaticGameArea implements OnClearWordList
             field.setRandomLetter();
             field.show();
         }
+        updateGameBundle();
     }
 
 }

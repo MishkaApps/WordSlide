@@ -6,4 +6,29 @@
     android:layout_height="match_parent"
     tools:context="mb.wordslide.src.LeaderboardActivity">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_score_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:layout_margin="10dp"/>
+
+        <Button
+            android:id="@+id/btn_get_scores"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="Get Scores"
+            android:layout_margin="10dp"/>
+
+
+    </LinearLayout>
+
 </RelativeLayout>

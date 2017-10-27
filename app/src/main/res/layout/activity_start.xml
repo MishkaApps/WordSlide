@@ -31,13 +31,25 @@
                 android:layout_height="24dp"
                 android:layout_gravity="center"
                 android:background="@drawable/menu_img"
-                android:backgroundTint="@color/elements_color"/>
+                android:backgroundTint="@color/elements_color" />
         </FrameLayout>
     </LinearLayout>
 
     <Space
         android:layout_width="20px"
         android:layout_height="200dp" />
+
+    <Button
+        android:id="@+id/btn_resume"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/capsule"
+        android:text="Resume" />
+
+    <Space
+        android:layout_width="20px"
+        android:layout_height="20dp" />
 
     <Button
         android:id="@+id/btn_moves_game"
@@ -70,5 +82,17 @@
         android:layout_gravity="center"
         android:background="@drawable/capsule"
         android:text="Leaderboard" />
+
+    <Space
+        android:layout_width="20px"
+        android:layout_height="20dp" />
+
+    <Button
+        android:id="@+id/btn_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/capsule"
+        android:text="Delete Game" />
 
 </LinearLayout>

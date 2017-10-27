@@ -9,6 +9,7 @@ import android.widget.GridLayout;
 import java.util.ArrayList;
 
 import mb.wordslide.R;
+import mb.wordslide.src.Configurations;
 import mb.wordslide.src.Game.Field.GameField;
 import mb.wordslide.src.Game.FieldAnimationListener;
 import mb.wordslide.src.Game.Field.BorderField;
@@ -37,7 +38,7 @@ public class AnimatedGameArea extends ClickableGameArea implements View.OnTouchL
 
     public AnimatedGameArea(GridLayout gameAreaGrid,
                             LayoutInflater inflater, Context context) {
-        super(6, inflater, gameAreaGrid, context);
+        super(Configurations.GAME_AREA_DIMENSION, inflater, gameAreaGrid, context);
         setFieldsTouchListener();
         currentFingerPosition = new FingerPosition();
         previousFingerPosition = new FingerPosition();

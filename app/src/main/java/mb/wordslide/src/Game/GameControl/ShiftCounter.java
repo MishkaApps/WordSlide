@@ -3,18 +3,19 @@ package mb.wordslide.src.Game.GameControl;
 import android.widget.ProgressBar;
 
 import mb.wordslide.src.Configurations;
+import mb.wordslide.src.Game.GameBlueprint.GameBlueprint;
 
 /**
  * Created by mbolg on 31.08.2017.
  */
 
-public class ShiftCounter implements GameController, ShiftListener {
+public class ShiftCounter extends GameController implements ShiftListener {
     private int remainingShifts;
     private GameOverListener gameOverListener;
     private ProgressBar progressBar;
 
-    public ShiftCounter() {
-        remainingShifts = Configurations.START_MOVES_NUMBER;
+    public ShiftCounter(GameBlueprint gameBlueprint) {
+        super(gameBlueprint);
     }
 
     @Override
@@ -22,6 +23,7 @@ public class ShiftCounter implements GameController, ShiftListener {
         decreaseRemainingShifts();
         updateProgressBar();
         checkForGameOver();
+        updateGameBlueprintProgress();
     }
 
     @Override
@@ -64,4 +66,20 @@ public class ShiftCounter implements GameController, ShiftListener {
     public void updateProgressBar() {
         progressBar.setProgress(remainingShifts);
     }
+
+    @Override
+    public void setGameBlueprint(GameBlueprint gameBlueprint) {
+        this.gameBlueprint = gameBlueprint;
+    }
+
+    @Override
+    public void updateGameBlueprintProgress() {
+        gameBlueprint.setProgress(remainingShifts);
+    }
+
+    @Override
+    void setProgressFromGameBlueprint(int progress) {
+        remainingShifts = progress;
+    }
+
 }

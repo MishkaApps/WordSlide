@@ -50,13 +50,6 @@ public abstract class Field extends android.support.v7.widget.AppCompatTextView 
         return pos[1];
     }
 
-//    public float getAbsolutePositionX() {
-//        return getX();
-//    }
-//    public float getAbsolutePositionY() {
-//        return getY();
-//    }
-
     public void setDistanceToFinger(float x, float y) {
         distanceToFingerX = x;
         distanceToFingerY = y;
@@ -163,7 +156,6 @@ public abstract class Field extends android.support.v7.widget.AppCompatTextView 
     }
 
     protected String getPositionAsString() {
-
         return "(" + getPositionX() + "; " + getPositionY() + ")";
     }
 }

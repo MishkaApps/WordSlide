@@ -3,15 +3,15 @@ package mb.wordslide.src.Game.GameControl;
 import android.os.CountDownTimer;
 import android.widget.ProgressBar;
 
-import java.util.ArrayList;
-
 import mb.wordslide.src.Configurations;
+import mb.wordslide.src.Game.GameBlueprint.GameBlueprint;
+import mb.wordslide.src.L;
 
 /**
  * Created by mbolg on 01.09.2017.
  */
 
-public class Timer implements GameController{
+public class Timer extends GameController {
     private final int THOUSAND_MILLISECONDS = 1000;
     private CountDownTimer timer;
     private GameOverListener gameOverListener;
@@ -19,8 +19,8 @@ public class Timer implements GameController{
     private boolean paused;
     private ProgressBar progressBar;
 
-    public Timer() {
-        resetTime();
+    public Timer(GameBlueprint gameBlueprint) {
+        super(gameBlueprint);
         start();
     }
 
@@ -81,7 +81,13 @@ public class Timer implements GameController{
 
     @Override
     public void updateProgressBar() {
-        progressBar.setProgress((int) (timeToFinishInMillis / THOUSAND_MILLISECONDS));
+        L.l("saved time: " + getTimeToFinishInSeconds());
+        progressBar.setProgress(getTimeToFinishInSeconds());
+        updateGameBlueprintProgress();
+    }
+
+    private int getTimeToFinishInSeconds() {
+        return (int) (timeToFinishInMillis / THOUSAND_MILLISECONDS);
     }
 
     public void resume() {
@@ -95,5 +101,21 @@ public class Timer implements GameController{
         timeToFinishInMillis += THOUSAND_MILLISECONDS * seconds;
         createTimer();
         start();
+    }
+
+    @Override
+    public void setGameBlueprint(GameBlueprint gameBlueprint) {
+        this.gameBlueprint = gameBlueprint;
+
+    }
+
+    @Override
+    public void updateGameBlueprintProgress() {
+        gameBlueprint.setProgress(getTimeToFinishInSeconds());
+    }
+
+    @Override
+    void setProgressFromGameBlueprint(int progress) {
+        timeToFinishInMillis = THOUSAND_MILLISECONDS * progress;
     }
 }

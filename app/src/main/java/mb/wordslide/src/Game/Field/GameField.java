@@ -13,7 +13,6 @@ import mb.wordslide.src.L;
 public class GameField extends Field {
     public GameField(Context context, AttributeSet attrs) {
         super(context, attrs);
-        setRandomLetter();
     }
 
     // todo: пиздос криво, необходимо объектно оториентировать эту хуйню

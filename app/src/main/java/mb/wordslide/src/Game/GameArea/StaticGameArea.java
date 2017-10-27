@@ -1,16 +1,20 @@
 package mb.wordslide.src.Game.GameArea;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.GridLayout;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
 
 import java.util.ArrayList;
 
 import mb.wordslide.R;
 import mb.wordslide.src.Configurations;
 import mb.wordslide.src.Game.Field.Field;
+import mb.wordslide.src.Game.GameBlueprint.GameBlueprint;
 
 /**
  * Created by mbolg on 26.07.2017.
@@ -22,11 +26,14 @@ public class StaticGameArea {
     protected int gameAreaDimension;
     protected LayoutInflater inflater;
     protected int gameAreaOffsetX, gameAreaOffsetY;
+    private GameBlueprint gameBundle;
+    private Context context;
 
-    public StaticGameArea(int areaDimension, LayoutInflater inflater, GridLayout gameAreaGrid) {
+    public StaticGameArea(int areaDimension, LayoutInflater inflater, GridLayout gameAreaGrid, Context context) {
         this.gameAreaDimension = areaDimension;
         this.inflater = inflater;
         this.gameAreaGrid = gameAreaGrid;
+        this.context = context;
 
         ImmutableTable.Builder<Integer, Integer, Field> fieldsBuilder = new ImmutableTable.Builder<>();
         ArrayList<Field> inflatedFields = inflateFields();
@@ -54,7 +61,7 @@ public class StaticGameArea {
     }
 
     private void setGameAreaOffsetForFields() {
-        for(Field field: getFieldsArrayList())
+        for (Field field : getFieldsArrayList())
             field.setGameAreaOffset(gameAreaOffsetX, gameAreaOffsetY);
     }
 
@@ -103,7 +110,9 @@ public class StaticGameArea {
             fields.get(row, col).setLetter(fields.get(row, col + 1).getLetter());
         }
         fields.get(row, gameAreaDimension - 1).setLetter(tempChar);
+        updateGameBundle();
     }
+
 
     protected void shiftRowRight(int row) {
         char tempChar = fields.get(row, gameAreaDimension - 1).getLetter();
@@ -111,6 +120,7 @@ public class StaticGameArea {
             fields.get(row, col).setLetter(fields.get(row, col - 1).getLetter());
         }
         fields.get(row, 0).setLetter(tempChar);
+        updateGameBundle();
     }
 
     protected void shiftColUp(int col) {
@@ -119,6 +129,7 @@ public class StaticGameArea {
             fields.get(row, col).setLetter(fields.get(row + 1, col).getLetter());
         }
         fields.get(gameAreaDimension - 1, col).setLetter(tempChar);
+        updateGameBundle();
     }
 
     protected void shiftColDown(int col) {
@@ -127,10 +138,28 @@ public class StaticGameArea {
             fields.get(row, col).setLetter(fields.get(row - 1, col).getLetter());
         }
         fields.get(0, col).setLetter(tempChar);
+        updateGameBundle();
+    }
+
+    protected void updateGameBundle() {
+        Table<Integer, Integer, Character> gameArea = HashBasedTable.create();
+        for (Field field : getFieldsArrayList()) {
+            gameArea.put(field.getRow(), field.getCol(), field.getLetter());
+        }
+        gameBundle.updateGameAreaAndSave(gameArea);
     }
 
     public ArrayList<Field> getFieldsArrayList() {
         return new ArrayList<>(fields.values());
     }
 
+    public void setGameBundle(GameBlueprint gameBundle) {
+        this.gameBundle = gameBundle;
+        restoreGameArea();
+    }
+
+    private void restoreGameArea() {
+        for (Field field : getFieldsArrayList())
+            field.setLetter(gameBundle.getLetterInField(field.getRow(), field.getCol()));
+    }
 }
